@@ -9,17 +9,16 @@ public:
 	//Sprites / pngs
 	std::unique_ptr<olc::Sprite> GoopRight;
 	std::unique_ptr<olc::Sprite> Grass;
+	olc::Decal* d = new olc::Decal(Grass.get());
 
 	GoopSlayer() {
 		sAppName = "GoopSlayer";
 	}
 
 	void DrawGrass() {
-		for (int x = 0; x < 1920; x += 32) {
-			DrawSprite(x, 0, Grass.get(), 1);
-			for (int y = 0; y < 1080; y += 32) {
-				DrawSprite(0, y, Grass.get(), 1);
-				DrawSprite(x, y, Grass.get(), 1);
+		for (int x = 0; x < 800; x += 32) {
+			for (int y = 0; y < 600; y += 32) {
+				DrawDecal({ (float)x, (float)y }, d);
 			}
 		}
 	}
@@ -39,7 +38,7 @@ private:
 
 int main() {
 	GoopSlayer demo;
-	if (demo.Construct(1920, 1080, 1, 1))
+	if (demo.Construct(800, 600, 1, 1, true))
 		demo.Start();
 	return 0;
 }
