@@ -34,7 +34,6 @@ public:
     }
 
     void MoveGoop() {
-        GoopX += 1;
         DrawDecal({ (float)GoopX, (float)GoopY }, GoopRightDecal, { (float)2, (float)2 });
         if (GoopX == 960) {
             GoopX = 0;
@@ -78,7 +77,7 @@ public:
             float angle = atan2f(arrowVel.y, arrowVel.x);
 
             // Draw the rotated arrow
-            DrawRotatedDecal(arrowPos, ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+            DrawRotatedDecal(arrowPos, ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f}, olc::WHITE);
         }
 
         return true;
