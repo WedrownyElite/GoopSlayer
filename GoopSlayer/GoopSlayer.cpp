@@ -1,5 +1,7 @@
 #define OLC_PGE_APPLICATION
 #include "olcPixelGameEngine.h"
+#include <iostream>
+#include <vector>
 
 class GoopSlayer : public olc::PixelGameEngine {
 public:
@@ -17,9 +19,9 @@ public:
     float GoopX = 0;
     float GoopY = 50;
     //Arrow variables
-    olc::vf2d arrowPos;
-    olc::vf2d arrowVel;
-    bool arrowLaunched = false;
+    olc::vf2d arrowPos[99];
+    olc::vf2d arrowVel[99];
+    int arrowCount = 0;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -46,40 +48,43 @@ public:
 
         // User input
         if (GetMouse(0).bPressed) {
-            // Get mouse click position
-            olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
+            arrowCount++;
+            for (int arrows = 1; arrows <= arrowCount; arrows++) {
+                // Get mouse click position
+                std::array< olc::vf2d, 99 > targetPos = { olc::vf2d{ (float)GetMouseX(), (float)GetMouseY() } };
 
-            // Calculate velocity towards the target
-            arrowVel = (targetPos - arrowPos).norm() * 200.0f;
-
-            // Set arrow as launched
-            arrowLaunched = true;
+                // Calculate velocity towards the target
+                arrowVel[arrows] = (targetPos[arrows] - arrowPos[arrows]).norm() * 200.0f;
+            }
         }
 
         // Move the arrow
-        if (arrowLaunched) {
-            arrowPos += arrowVel * fElapsedTime;
+        if (arrowCount > 0) {
+            for (int arrows = 1; arrows <= arrowCount; arrows++) {
+                arrowPos[arrows] += arrowVel[arrows] * fElapsedTime;
 
-            // Check if arrow is off-screen
-            if (arrowPos.x < 0 || arrowPos.x >= ScreenWidth() || arrowPos.y < 0 || arrowPos.y >= ScreenHeight()) {
-                // Reset arrow when it's off-screen
-                arrowPos = { (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 };
-                arrowVel = { 0.0f, 0.0f };
-                arrowLaunched = false;
+                // Check if arrow is off-screen
+                if (arrowPos[arrows].x < 0 || arrowPos[arrows].x >= ScreenWidth() || arrowPos[arrows].y < 0 || arrowPos[arrows].y >= ScreenHeight()) {
+                    // Reset arrow when it's off-screen
+                    arrowPos[arrows] = { (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 };
+                    arrowVel[arrows] = { 0.0f, 0.0f };
+                    arrowCount--;
+                }
             }
         }
 
         Clear(olc::BLACK);
 
         // Draw the arrow using DrawRotateDecal
-        if (arrowLaunched) {
-            // Calculate the angle of rotation based on the arrow's velocity
-            float angle = atan2f(arrowVel.y, arrowVel.x);
+        if (arrowCount > 0) {
+            for (int arrows = 1; arrows <= arrowCount; arrows++) {
+                // Calculate the angle of rotation based on the arrow's velocity
+                float angle = atan2f(arrowVel[arrows].y, arrowVel[arrows].x);
 
-            // Draw the rotated arrow
-            DrawRotatedDecal(arrowPos, ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f}, olc::WHITE);
+                // Draw the rotated arrow
+                DrawRotatedDecal(arrowPos[arrows], ArrowDecal, angle[, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+            }
         }
-
         return true;
     }
 
@@ -96,8 +101,8 @@ private:
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
         ArrowDecal = new olc::Decal(Arrow.get());
         //Set arrow velocity and position
-        arrowPos = { (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 };
-        arrowVel = { 0.0f, 0.0f };
+        arrowPos[100] = {(float)ScreenWidth() / 2, (float)ScreenHeight() / 2};
+        arrowVel[100] = {0.0f, 0.0f};
         return true;
     }
 };
