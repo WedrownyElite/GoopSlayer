@@ -16,7 +16,7 @@ public:
     olc::Decal* ArcherRightDecal;
     olc::Decal* ArrowDecal;
     //GoopVariables
-    float GoopX = 0;
+    float GoopX = -70;
     float GoopY = 50;
     //Arrow variables
     olc::vf2d arrowPos[99];
@@ -35,15 +35,18 @@ public:
         }
     }
 
-    void MoveGoop() {
+    void MoveGoop(float speed) {
+        GoopX += speed;
         DrawDecal({ (float)GoopX, (float)GoopY }, GoopRightDecal, { (float)2, (float)2 });
-        if (GoopX == 960) {
-            GoopX = 0;
+        if (GoopX >= 960) {
+            GoopX = -70;
         }
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
-        MoveGoop();
+        float speed = 200 * fElapsedTime;
+        DrawGrass();
+        MoveGoop(speed);
         DrawDecal({ (float)448, (float)238 }, ArcherRightDecal, { (float)2, (float)2 });
 
         // User input
@@ -54,7 +57,7 @@ public:
                 std::array< olc::vf2d, 99 > targetPos = { olc::vf2d{ (float)GetMouseX(), (float)GetMouseY() } };
 
                 // Calculate velocity towards the target
-                arrowVel[arrows] = (targetPos[arrows] - arrowPos[arrows]).norm() * 200.0f;
+                arrowVel[arrows] = (targetPos[arrows] - arrowPos[arrows]).norm() * 300.0f;
             }
         }
 
@@ -82,7 +85,7 @@ public:
                 float angle = atan2f(arrowVel[arrows].y, arrowVel[arrows].x);
 
                 // Draw the rotated arrow
-                DrawRotatedDecal(arrowPos[arrows], ArrowDecal, angle[, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+                DrawRotatedDecal(arrowPos[arrows], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
             }
         }
         return true;
