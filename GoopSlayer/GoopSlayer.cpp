@@ -49,6 +49,8 @@ public:
 		DrawDecal({ (float)448, (float)238 }, ArcherRightDecal, { (float)2, (float)2 });
 		//User input
 		if (GetMouse(0).bPressed) {
+			arrowPos = { (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 };
+			arrowVel = { 0.0f, 0.0f };
 			// Get mouse click position
 			olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
 
