@@ -23,9 +23,6 @@ public:
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
     olc::vf2d ArcherPos;
-    //User inputs
-    enum userInputs {LEFT, RIGHT, UP, DOWN, STOP};
-    userInputs Inputs = STOP;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -38,8 +35,8 @@ public:
             }
         }
     }
-    void MoveGoop(float speed) {
-        GoopPos[0].x += speed;
+    void MoveGoop(float GoopSpeed) {
+        GoopPos[0].x += GoopSpeed;
         DrawDecal({GoopPos[0]}, GoopRightDecal, {2.0f, 2.0f});
         if (GoopPos[0].x >= 960) {
             GoopPos[0].x = -70;
@@ -101,45 +98,47 @@ public:
 
 
             // Store the arrow's position and velocity
-            arrowPos.push_back({ (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 });
+            arrowPos.push_back({ArcherPos.x + 15, ArcherPos.y + 15});
             arrowVel.push_back(vel);
         }
         DrawArrow(fElapsedTime);
     }
-    void UserInput(float fElapsedTime, float speed) {
-        if (GetKey(olc::Key::LEFT).bHeld) {
-            Inputs = LEFT;
+    void UserInput(float ArcherSpeed) {
+        if (GetKey(olc::Key::LEFT).bHeld && ArcherPos.x < 896 && ArcherPos.x > 64) {
+            ArcherPos.x -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::RIGHT).bHeld) {
-            Inputs = RIGHT;
+        if (GetKey(olc::Key::RIGHT).bHeld && ArcherPos.x < 896 && ArcherPos.x > 64) {
+            ArcherPos.x += ArcherSpeed;
         }
-        if (GetKey(olc::Key::UP).bHeld) {
-            Inputs = UP;
+        if (GetKey(olc::Key::UP).bHeld && ArcherPos.y < 475 && ArcherPos.y > 64) {
+            ArcherPos.y -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::DOWN).bHeld) {
-            Inputs = DOWN;
+        if (GetKey(olc::Key::DOWN).bHeld && ArcherPos.y < 475 && ArcherPos.y > 64) {
+            ArcherPos.y += ArcherSpeed;
         }
-
-        switch (Inputs) {
-        case LEFT:
-            ArcherPos.x -= speed;
-        case RIGHT:
-            ArcherPos.x += speed;
-        case UP:
-            ArcherPos.y -= speed;
-        case DOWN:
-            ArcherPos.y += speed;
+        if (ArcherPos.x > 896) {
+            ArcherPos.x = 896;
+        }
+        if (ArcherPos.x < 64) {
+            ArcherPos.x = 64;
+        }
+        if (ArcherPos.y > 475) {
+            ArcherPos.y = 475;
+        }
+        if (ArcherPos.y < 0) {
+            ArcherPos.y = 0;
         }
 
     }
     bool OnUserUpdate(float fElapsedTime) override {
-        float speed = 200 * fElapsedTime;
+        float ArcherSpeed = 200 * fElapsedTime;
+        float GoopSpeed = 300 * fElapsedTime;
         DrawGrass();
         if (GoopAlive[0] == true) {
-            MoveGoop(speed);
+            MoveGoop(GoopSpeed);
         }
         DrawDecal({ArcherPos}, ArcherRightDecal, { (float)2, (float)2 });
-        UserInput(fElapsedTime, speed);
+        UserInput(ArcherSpeed);
         ShootArrow(fElapsedTime);
 
         return true;
