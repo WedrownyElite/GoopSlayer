@@ -16,9 +16,10 @@ public:
     olc::Decal* ArcherRightDecal;
     olc::Decal* ArrowDecal;
     //GoopVariables
-    float GoopX = -70;
-    float GoopY = 50;
-    bool GoopAlive = true;
+    std::vector<bool> GoopAlive;
+    GoopAlive.push_back(true);
+    std::vector<olc::vf2d> GoopPos;
+    int GoopCount = 1;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
@@ -37,20 +38,20 @@ public:
     }
 
     void MoveGoop(float speed) {
-        GoopX += speed;
-        DrawDecal({ (float)GoopX, (float)GoopY }, GoopRightDecal, { (float)2, (float)2 });
-        if (GoopX >= 960) {
-            GoopX = -70;
+        GoopPos[0].x += speed;
+        DrawDecal({GoopPos[0]}, GoopRightDecal, {2.0f, 2.0f});
+        if (GoopPos[0].x >= 960) {
+            GoopPos[0].x = -70;
         }
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
         float speed = 200 * fElapsedTime;
         DrawGrass();
-        if (GoopAlive == true) {
+        if (GoopAlive[0] == true) {
             MoveGoop(speed);
         }
-        DrawDecal({ (float)448, (float)238 }, ArcherRightDecal, { (float)2, (float)2 });
+        DrawDecal({ 448.0f, 238.0f }, ArcherRightDecal, { (float)2, (float)2 });
 
         // User input
         if (GetMouse(0).bPressed && arrowPos.size() < 100) {
@@ -88,17 +89,20 @@ public:
                     if (k < arrowPos.size()) {
                         olc::vi2d Arrow(arrowPos[k]);
                         olc::vi2d ArrowSize(32, 32);
-                        olc::vi2d Goop(GoopX, GoopY);
-                        olc::vi2d GoopSize(64, 64);
 
-                        if (Arrow.x < Goop.x + GoopSize.x &&
-                            Arrow.x + ArrowSize.x > Goop.x &&
-                            Arrow.y < Goop.y + GoopSize.y &&
-                            Arrow.y + ArrowSize.y > Goop.y) {
-                            arrowPos.erase(arrowPos.begin() + k);
-                            arrowVel.erase(arrowVel.begin() + k);
-                            k--;
-                            GoopAlive = false;
+                        for (int o = 0; o < GoopCount; k++) {
+                            olc::vi2d Goop(GoopPos[o]);
+                            olc::vi2d GoopSize(63, 63);
+
+                            if (Arrow.x < Goop.x + GoopSize.x &&
+                                Arrow.x + ArrowSize.x > Goop.x &&
+                                Arrow.y < Goop.y + GoopSize.y &&
+                                Arrow.y + ArrowSize.y > Goop.y) {
+                                arrowPos.erase(arrowPos.begin() + k);
+                                arrowVel.erase(arrowVel.begin() + k);
+                                k--;
+                                GoopAlive[o] = false;
+                            }
                         }
                     }
             }
