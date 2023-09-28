@@ -15,14 +15,17 @@ public:
     olc::Decal* GoopRightDecal;
     olc::Decal* ArcherRightDecal;
     olc::Decal* ArrowDecal;
-    //GoopVariables
+    //Goop variables
     std::vector<bool> GoopAlive;
     std::vector<olc::vf2d> GoopPos;
-    int GoopCount = 1;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
-    int arrowCount = 0;
+    //Archer variables
+    olc::vf2d ArcherPos;
+    //User inputs
+    enum userInputs {LEFT, RIGHT, UP, DOWN, STOP};
+    userInputs Inputs = STOP;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -35,7 +38,6 @@ public:
             }
         }
     }
-
     void MoveGoop(float speed) {
         GoopPos[0].x += speed;
         DrawDecal({GoopPos[0]}, GoopRightDecal, {2.0f, 2.0f});
@@ -43,30 +45,28 @@ public:
             GoopPos[0].x = -70;
         }
     }
+    void ArrowGoopCheck() {
+        //Check if arrow hits goop
+        for (int k = 0; k < arrowPos.size(); k++) {
+            olc::vi2d Arrow(arrowPos[k]);
+            olc::vi2d ArrowSize(30, 30);
 
-    bool OnUserUpdate(float fElapsedTime) override {
-        float speed = 200 * fElapsedTime;
-        DrawGrass();
-        if (GoopAlive[0] == true) {
-            MoveGoop(speed);
+            for (int o = 0; o < GoopPos.size(); o++) {
+                olc::vi2d Goop(GoopPos[o]);
+                olc::vi2d GoopSize(63, 63);
+
+                if (Arrow.x < Goop.x + GoopSize.x &&
+                    Arrow.x + ArrowSize.x > Goop.x &&
+                    Arrow.y < Goop.y + GoopSize.y &&
+                    Arrow.y + ArrowSize.y > Goop.y) {
+                    arrowPos.erase(arrowPos.begin() + k);
+                    arrowVel.erase(arrowVel.begin() + k);
+                    GoopPos[o].x = -30;
+                }
+            }
         }
-        DrawDecal({ 448.0f, 238.0f }, ArcherRightDecal, { (float)2, (float)2 });
-
-        // User input
-        if (GetMouse(0).bPressed && arrowPos.size() < 100) {
-            arrowCount++;
-            // Get mouse click position
-            olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
-
-            // Calculate velocity towards the target
-            olc::vf2d vel = (targetPos - olc::vf2d((float)ScreenWidth() / 2, (float)ScreenHeight() / 2)).norm() * 300.0f;
-
-
-            // Store the arrow's position and velocity
-            arrowPos.push_back({ (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 });
-            arrowVel.push_back(vel);
-        }
-
+    }
+    void DrawArrow(float fElapsedTime) {
         // Move and draw the arrows
         for (size_t i = 0; i < arrowPos.size(); i++) {
             arrowPos[i] += arrowVel[i] * fElapsedTime;
@@ -84,35 +84,72 @@ public:
 
                 // Draw the rotated arrow
                 DrawRotatedDecal(arrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
-                for (int k = 0; k < arrowCount; k++) {
-                    if (k < arrowPos.size()) {
-                        olc::vi2d Arrow(arrowPos[k]);
-                        olc::vi2d ArrowSize(32, 32);
 
-                        for (int o = 0; o < GoopCount; k++) {
-                            olc::vi2d Goop(GoopPos[o]);
-                            olc::vi2d GoopSize(63, 63);
-
-                            if (Arrow.x < Goop.x + GoopSize.x &&
-                                Arrow.x + ArrowSize.x > Goop.x &&
-                                Arrow.y < Goop.y + GoopSize.y &&
-                                Arrow.y + ArrowSize.y > Goop.y) {
-                                arrowPos.erase(arrowPos.begin() + k);
-                                arrowVel.erase(arrowVel.begin() + k);
-                                k--;
-                                GoopAlive[o] = false;
-                            }
-                        }
-                    }
-            }
+                //Arrow+Goop Check
+                ArrowGoopCheck();
             }
         }
+    }
+    void ShootArrow(float fElapsedTime) {
+        // User input
+        if (GetMouse(0).bPressed && arrowPos.size() < 100) {
+            // Get mouse click position
+            olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
+
+            // Calculate velocity towards the target
+            olc::vf2d vel = (targetPos - olc::vf2d(ArcherPos)).norm() * 300.0f;
+
+
+            // Store the arrow's position and velocity
+            arrowPos.push_back({ (float)ScreenWidth() / 2, (float)ScreenHeight() / 2 });
+            arrowVel.push_back(vel);
+        }
+        DrawArrow(fElapsedTime);
+    }
+    void UserInput(float fElapsedTime, float speed) {
+        if (GetKey(olc::Key::LEFT).bHeld) {
+            Inputs = LEFT;
+        }
+        if (GetKey(olc::Key::RIGHT).bHeld) {
+            Inputs = RIGHT;
+        }
+        if (GetKey(olc::Key::UP).bHeld) {
+            Inputs = UP;
+        }
+        if (GetKey(olc::Key::DOWN).bHeld) {
+            Inputs = DOWN;
+        }
+
+        switch (Inputs) {
+        case LEFT:
+            ArcherPos.x -= speed;
+        case RIGHT:
+            ArcherPos.x += speed;
+        case UP:
+            ArcherPos.y -= speed;
+        case DOWN:
+            ArcherPos.y += speed;
+        }
+
+    }
+    bool OnUserUpdate(float fElapsedTime) override {
+        float speed = 200 * fElapsedTime;
+        DrawGrass();
+        if (GoopAlive[0] == true) {
+            MoveGoop(speed);
+        }
+        DrawDecal({ArcherPos}, ArcherRightDecal, { (float)2, (float)2 });
+        UserInput(fElapsedTime, speed);
+        ShootArrow(fElapsedTime);
 
         return true;
     }
 
 private:
     bool OnUserCreate() override {
+        ArcherPos.x = 448.0f;
+        ArcherPos.y = 238.0f;
+        GoopPos.push_back({ -30, (float)ScreenHeight() / 4 });
         GoopAlive.push_back(true);
         //Sprites
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
