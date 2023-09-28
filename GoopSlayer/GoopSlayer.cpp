@@ -17,7 +17,6 @@ public:
     olc::Decal* ArrowDecal;
     //GoopVariables
     std::vector<bool> GoopAlive;
-    GoopAlive.push_back(true);
     std::vector<olc::vf2d> GoopPos;
     int GoopCount = 1;
     //Arrow variables
@@ -114,6 +113,7 @@ public:
 
 private:
     bool OnUserCreate() override {
+        GoopAlive.push_back(true);
         //Sprites
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
