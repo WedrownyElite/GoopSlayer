@@ -84,21 +84,22 @@ public:
 
                 // Draw the rotated arrow
                 DrawRotatedDecal(arrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
-                for (int k = 0; k <= arrowCount; k++) {
-                    olc::vi2d Arrow(arrowPos[k]);
-                    olc::vi2d ArrowSize(1, 1);
-                    olc::vi2d Goop(GoopX, GoopY);
-                    olc::vi2d GoopSize(2, 2);
+                for (int k = 0; k < arrowCount; k++) {
+                    if (k < arrowPos.size()) {
+                        olc::vi2d Arrow(arrowPos[k]);
+                        olc::vi2d ArrowSize(32, 32);
+                        olc::vi2d Goop(GoopX, GoopY);
+                        olc::vi2d GoopSize(64, 64);
 
-                    if (Arrow.x < Goop.x + GoopSize.x &&
-                        Arrow.x + ArrowSize.x > Goop.x &&
-                        Arrow.y < Goop.y + GoopSize.y &&
-                        Arrow.y + ArrowSize.y > Goop.y) {
-                        arrowPos.erase(arrowPos.begin() + k);
-                        arrowVel.erase(arrowVel.begin() + k);
-                        k--;
-                        GoopAlive = false;
-
+                        if (Arrow.x < Goop.x + GoopSize.x &&
+                            Arrow.x + ArrowSize.x > Goop.x &&
+                            Arrow.y < Goop.y + GoopSize.y &&
+                            Arrow.y + ArrowSize.y > Goop.y) {
+                            arrowPos.erase(arrowPos.begin() + k);
+                            arrowVel.erase(arrowVel.begin() + k);
+                            k--;
+                            GoopAlive = false;
+                        }
                     }
             }
             }
