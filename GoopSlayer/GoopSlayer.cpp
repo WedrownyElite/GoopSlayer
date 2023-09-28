@@ -18,9 +18,11 @@ public:
     //GoopVariables
     float GoopX = -70;
     float GoopY = 50;
+    bool GoopAlive = true;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
+    int arrowCount = 0;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -45,11 +47,14 @@ public:
     bool OnUserUpdate(float fElapsedTime) override {
         float speed = 200 * fElapsedTime;
         DrawGrass();
-        MoveGoop(speed);
+        if (GoopAlive == true) {
+            MoveGoop(speed);
+        }
         DrawDecal({ (float)448, (float)238 }, ArcherRightDecal, { (float)2, (float)2 });
 
         // User input
         if (GetMouse(0).bPressed && arrowPos.size() < 100) {
+            arrowCount++;
             // Get mouse click position
             olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
 
@@ -79,6 +84,23 @@ public:
 
                 // Draw the rotated arrow
                 DrawRotatedDecal(arrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+                for (int k = 0; k <= arrowCount; k++) {
+                    olc::vi2d Arrow(arrowPos[k]);
+                    olc::vi2d ArrowSize(1, 1);
+                    olc::vi2d Goop(GoopX, GoopY);
+                    olc::vi2d GoopSize(2, 2);
+
+                    if (Arrow.x < Goop.x + GoopSize.x &&
+                        Arrow.x + ArrowSize.x > Goop.x &&
+                        Arrow.y < Goop.y + GoopSize.y &&
+                        Arrow.y + ArrowSize.y > Goop.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        k--;
+                        GoopAlive = false;
+
+                    }
+            }
             }
         }
 
