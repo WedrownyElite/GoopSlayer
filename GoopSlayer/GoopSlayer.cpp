@@ -17,6 +17,7 @@ public:
     olc::Decal* ArrowDecal;
     //Goop variables
     std::vector<bool> GoopAlive;
+    std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
@@ -35,11 +36,32 @@ public:
             }
         }
     }
-    void MoveGoop(float GoopSpeed) {
-        GoopPos[0].x += GoopSpeed;
-        DrawDecal({GoopPos[0]}, GoopRightDecal, {2.0f, 2.0f});
-        if (GoopPos[0].x >= 960) {
-            GoopPos[0].x = -70;
+    void PlayerGoopCheck() {
+        olc::vi2d Goop(GoopPos[0]);
+        olc::vi2d GoopSize(64, 64);
+        olc::vi2d Archer(ArcherPos);
+        olc::vi2d ArcherSize(64, 64);
+
+        if (Goop.x < ArcherPos.x + ArcherSize.x &&
+            Goop.x + GoopSize.x > Archer.x &&
+            Goop.y < Archer.y + ArcherSize.y &&
+            Goop.y + GoopSize.y > Archer.y) {
+            GoopPos[0].x = -30;
+        }
+    }
+    void MoveGoop(float GoopSpeed, float fElapsedTime) {
+        if (GoopAlive[0]) {
+            // Calculate direction towards the player
+            olc::vf2d dir = (ArcherPos - GoopPos[0]).norm();
+
+            // Calculate the new position based on direction and speed
+            GoopPos[0] += dir * GoopSpeed;
+
+            // Draw the Goop
+            DrawDecal({ GoopPos[0] }, GoopRightDecal, { 2.0f, 2.0f });
+
+            // Player+Goop Check
+            PlayerGoopCheck();
         }
     }
     void ArrowGoopCheck() {
@@ -94,50 +116,50 @@ public:
             olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
 
             // Calculate velocity towards the target
-            olc::vf2d vel = (targetPos - olc::vf2d(ArcherPos)).norm() * 300.0f;
+            olc::vf2d vel = (targetPos - olc::vf2d(ArcherPos)).norm() * 500.0f;
 
 
             // Store the arrow's position and velocity
-            arrowPos.push_back({ArcherPos.x + 15, ArcherPos.y + 15});
+            arrowPos.push_back({ ArcherPos.x + 15, ArcherPos.y + 15 });
             arrowVel.push_back(vel);
         }
         DrawArrow(fElapsedTime);
     }
     void UserInput(float ArcherSpeed) {
-        if (GetKey(olc::Key::LEFT).bHeld && ArcherPos.x < 920 && ArcherPos.x > 20) {
+        if ((GetKey(olc::Key::LEFT).bHeld || (GetKey(olc::Key::A).bHeld)) && ArcherPos.x < 905 && ArcherPos.x > -5) {
             ArcherPos.x -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::RIGHT).bHeld && ArcherPos.x < 920 && ArcherPos.x > 20) {
+        if ((GetKey(olc::Key::RIGHT).bHeld || (GetKey(olc::Key::D).bHeld)) && ArcherPos.x < 920 && ArcherPos.x > -5) {
             ArcherPos.x += ArcherSpeed;
         }
-        if (GetKey(olc::Key::UP).bHeld && ArcherPos.y < 520 && ArcherPos.y > 0) {
+        if ((GetKey(olc::Key::UP).bHeld || (GetKey(olc::Key::W).bHeld)) && ArcherPos.y < 479 && ArcherPos.y > -5) {
             ArcherPos.y -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::DOWN).bHeld && ArcherPos.y < 520 && ArcherPos.y > 0) {
+        if ((GetKey(olc::Key::DOWN).bHeld || (GetKey(olc::Key::S).bHeld)) && ArcherPos.y < 479 && ArcherPos.y > -5) {
             ArcherPos.y += ArcherSpeed;
         }
-        if (ArcherPos.x > 920) {
-            ArcherPos.x = 919;
+        if (ArcherPos.x > 905) {
+            ArcherPos.x = 904;
         }
-        if (ArcherPos.x < 0) {
-            ArcherPos.x = 1;
+        if (ArcherPos.x < -5) {
+            ArcherPos.x = -4;
         }
-        if (ArcherPos.y > 520) {
-            ArcherPos.y = 519;
+        if (ArcherPos.y > 479) {
+            ArcherPos.y = 478;
         }
-        if (ArcherPos.y < 0) {
-            ArcherPos.y = 1;
+        if (ArcherPos.y < -5) {
+            ArcherPos.y = -4;
         }
 
     }
     bool OnUserUpdate(float fElapsedTime) override {
         float ArcherSpeed = 200 * fElapsedTime;
-        float GoopSpeed = 300 * fElapsedTime;
+        float GoopSpeed = 250 * fElapsedTime;
         DrawGrass();
         if (GoopAlive[0] == true) {
-            MoveGoop(GoopSpeed);
+            MoveGoop(GoopSpeed, fElapsedTime);
         }
-        DrawDecal({ArcherPos}, ArcherRightDecal, { (float)2, (float)2 });
+        DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
         UserInput(ArcherSpeed);
         ShootArrow(fElapsedTime);
 
@@ -148,7 +170,7 @@ private:
     bool OnUserCreate() override {
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
-        GoopPos.push_back({ -30, (float)ScreenHeight() / 4 });
+        GoopPos.push_back({ 0, (float)ScreenHeight() / 4 });
         GoopAlive.push_back(true);
         //Sprites
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
