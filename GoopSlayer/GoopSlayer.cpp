@@ -104,29 +104,29 @@ public:
         DrawArrow(fElapsedTime);
     }
     void UserInput(float ArcherSpeed) {
-        if (GetKey(olc::Key::LEFT).bHeld && ArcherPos.x < 896 && ArcherPos.x > 64) {
+        if (GetKey(olc::Key::LEFT).bHeld && ArcherPos.x < 920 && ArcherPos.x > 20) {
             ArcherPos.x -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::RIGHT).bHeld && ArcherPos.x < 896 && ArcherPos.x > 64) {
+        if (GetKey(olc::Key::RIGHT).bHeld && ArcherPos.x < 920 && ArcherPos.x > 20) {
             ArcherPos.x += ArcherSpeed;
         }
-        if (GetKey(olc::Key::UP).bHeld && ArcherPos.y < 475 && ArcherPos.y > 64) {
+        if (GetKey(olc::Key::UP).bHeld && ArcherPos.y < 520 && ArcherPos.y > 0) {
             ArcherPos.y -= ArcherSpeed;
         }
-        if (GetKey(olc::Key::DOWN).bHeld && ArcherPos.y < 475 && ArcherPos.y > 64) {
+        if (GetKey(olc::Key::DOWN).bHeld && ArcherPos.y < 520 && ArcherPos.y > 0) {
             ArcherPos.y += ArcherSpeed;
         }
-        if (ArcherPos.x > 896) {
-            ArcherPos.x = 896;
+        if (ArcherPos.x > 920) {
+            ArcherPos.x = 919;
         }
-        if (ArcherPos.x < 64) {
-            ArcherPos.x = 64;
+        if (ArcherPos.x < 0) {
+            ArcherPos.x = 1;
         }
-        if (ArcherPos.y > 475) {
-            ArcherPos.y = 475;
+        if (ArcherPos.y > 520) {
+            ArcherPos.y = 519;
         }
         if (ArcherPos.y < 0) {
-            ArcherPos.y = 0;
+            ArcherPos.y = 1;
         }
 
     }
