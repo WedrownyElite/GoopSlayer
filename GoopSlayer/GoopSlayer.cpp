@@ -24,11 +24,48 @@ public:
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
     olc::vf2d ArcherPos;
+    //Menu variables
+    int menu = 0;
+    enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
+    GameStateEnum GameState = MENU;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
 
+    void MainMenu() {
+        Clear(olc::BLACK);
+        if (menu == 0) {
+            DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 5 - 20 }, GoopRightDecal, { (float)3, (float)3 });
+            DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 4, "Goop Slayer", olc::MAGENTA, 6);
+            DrawString(ScreenWidth() / 3, ScreenHeight() / 3 + 70, ">> Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 2 + 50, "Quit", olc::RED, 4);
+        }
+        else if (menu == 1) {
+            DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 5 - 20 }, GoopRightDecal, { (float)3, (float)3 });
+            DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 4, "Goop Slayer", olc::MAGENTA, 6);
+            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 3 + 70, "Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3, ScreenHeight() / 2 + 50, ">> Quit", olc::RED, 4);
+        }
+        if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu < 1) {
+            menu++;
+        }
+        else if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu == 1) {
+            menu = 0;
+        }
+        else if ((GetKey(olc::Key::UP).bPressed || (GetKey(olc::Key::W).bPressed)) && menu > 0) {
+            menu--;
+        }
+        else if ((GetKey(olc::Key::UP).bPressed || (GetKey(olc::Key::W).bPressed)) && menu == 0) {
+            menu = 1;
+        }
+        if (GetKey(olc::Key::ENTER).bPressed && menu == 0) {
+            GameState = GAME;
+        }
+        else if (GetKey(olc::Key::ENTER).bPressed && menu == 1) {
+            GameState = QUIT;
+        }
+    }
     void DrawGrass() {
         for (int x = 0; x < 960; x += 32) {
             for (int y = 0; y < 540; y += 32) {
@@ -153,17 +190,25 @@ public:
 
     }
     bool OnUserUpdate(float fElapsedTime) override {
-        float ArcherSpeed = 200 * fElapsedTime;
-        float GoopSpeed = 250 * fElapsedTime;
-        DrawGrass();
-        if (GoopAlive[0] == true) {
-            MoveGoop(GoopSpeed, fElapsedTime);
+        if (GameState == MENU) {
+            MainMenu();
         }
-        DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
-        UserInput(ArcherSpeed);
-        ShootArrow(fElapsedTime);
+        if (GameState == QUIT) {
+            return false;
+        }
+        if (GameState == GAME) {
+            float ArcherSpeed = 200 * fElapsedTime;
+            float GoopSpeed = 250 * fElapsedTime;
+            DrawGrass();
+            if (GoopAlive[0] == true) {
+                MoveGoop(GoopSpeed, fElapsedTime);
+            }
+            DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
+            UserInput(ArcherSpeed);
+            ShootArrow(fElapsedTime);
 
-        return true;
+            return true;
+        }
     }
 
 private:
