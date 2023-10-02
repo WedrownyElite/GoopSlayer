@@ -55,12 +55,14 @@ public:
     void MainMenu() {
         Clear(olc::BLACK);
         if (menu == 0) {
+            DrawDecal({ (float)ScreenWidth() - 220, (float)ScreenHeight() / 5 - 20 }, ArrowDecal, { (float)4, (float)4 });
             DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 5 - 20 }, GoopRightDecal, { (float)3, (float)3 });
             DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 4, "Goop Slayer", olc::MAGENTA, 6);
             DrawString(ScreenWidth() / 3, ScreenHeight() / 3 + 70, ">> Play", olc::GREEN, 4);
             DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 2 + 50, "Quit", olc::RED, 4);
         }
         else if (menu == 1) {
+            DrawDecal({ (float)ScreenWidth() - 220, (float)ScreenHeight() / 5 - 20 }, ArrowDecal, { (float)4, (float)4 });
             DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 5 - 20 }, GoopRightDecal, { (float)3, (float)3 });
             DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 4, "Goop Slayer", olc::MAGENTA, 6);
             DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 3 + 70, "Play", olc::GREEN, 4);
@@ -281,7 +283,7 @@ private:
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRight.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
-        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
+        Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
         GrassDecal = new olc::Decal(Grass.get());
         GoopRightDecal = new olc::Decal(GoopRight.get());
