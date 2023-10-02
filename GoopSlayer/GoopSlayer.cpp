@@ -283,7 +283,7 @@ private:
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRight.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
-        Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
+        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
         GrassDecal = new olc::Decal(Grass.get());
         GoopRightDecal = new olc::Decal(GoopRight.get());
