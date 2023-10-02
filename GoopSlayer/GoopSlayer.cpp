@@ -18,9 +18,9 @@ public:
     olc::Decal* ArcherRightDecal;
     olc::Decal* ArrowDecal;
     //Goop variables
-    std::vector<bool> GoopAlive;
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
+    int MaxGoops = 1;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
@@ -31,6 +31,7 @@ public:
     int menu = 0;
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
     GameStateEnum GameState = MENU;
+    int Wave = 0;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -80,7 +81,7 @@ public:
         else if ((GetKey(olc::Key::UP).bPressed || (GetKey(olc::Key::W).bPressed)) && menu == 0) {
             menu = 1;
         }
-        if (GetKey(olc::Key::ENTER).bPressed && menu == 0) {
+        if ((GetKey(olc::Key::ENTER).bPressed) || (GetKey(olc::Key::E).bPressed) && menu == 0) {
             for (int k = 0; k < GoopPos.size(); k++) {
                 GoopPos.erase(GoopPos.begin() + k);
             }
@@ -108,16 +109,26 @@ public:
     void SpawnGoop() {
         if (GoopPos.size() == 0) {
             //Random num gen to choose whether goop X or Y is zero
-            srand(time(NULL));
-            int SideGoopNum = rand() % 2;
+            for (int k = 0; k < MaxGoops; k++) {
+                srand(time(NULL));
+                int SideGoopNum = rand() % 4;
 
-            if (SideGoopNum == 0) {
-                float GoopYNum = rand() % 539;
-                GoopPos.push_back({ 0, GoopYNum });
-            }
-            if (SideGoopNum == 1) {
-                float GoopXNum = rand() % 959;
-                GoopPos.push_back({ GoopXNum, 0 });
+                if (SideGoopNum == 0) {
+                    float GoopYNum = rand() % 539;
+                    GoopPos.push_back({ 0, GoopYNum });
+                }
+                if (SideGoopNum == 1) {
+                    float GoopXNum = rand() % 959;
+                    GoopPos.push_back({ GoopXNum, 0 });
+                }
+                if (SideGoopNum == 2) {
+                    float GoopXNum = rand() % 959;
+                    GoopPos.push_back({ GoopXNum, 540 });
+                }
+                if (SideGoopNum == 3) {
+                    float GoopYNum = rand() % 539;
+                    GoopPos.push_back({ 960, GoopYNum });
+                }
             }
         }
     }
@@ -135,24 +146,24 @@ public:
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
-        if (GoopAlive[0]) {
-            // Calculate direction towards the player
-            olc::vf2d dir = (ArcherPos - GoopPos[0]).norm();
+        // Calculate direction towards the player
+        olc::vf2d dir = (ArcherPos - GoopPos[0]).norm();
 
-            // Calculate the new position based on direction and speed
-            GoopPos[0] += dir * GoopSpeed;
+        // Calculate the new position based on direction and speed
+        GoopPos[0] += dir * GoopSpeed;
 
-            // Draw the Goop
+        // Draw the Goop
+        for (int k = 0; k < GoopPos.size(); k++) {
             if (dir.x < 0) {
-                DrawDecal({ GoopPos[0] }, GoopLeftDecal, { 2.0f, 2.0f });
+                DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
             }
             if (dir.x > 0) {
-                DrawDecal({ GoopPos[0] }, GoopRightDecal, { 2.0f, 2.0f });
+                DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
             }
-
-            // Player+Goop Check
-            PlayerGoopCheck();
         }
+
+        // Player+Goop Check
+        PlayerGoopCheck();
     }
     void ArrowGoopCheck() {
         //Check if arrow hits goop
@@ -256,9 +267,7 @@ public:
             SpawnGoop();
             //Draw Grass
             DrawGrass();
-            if (GoopAlive[0] == true) {
-                MoveGoop(GoopSpeed, fElapsedTime);
-            }
+            MoveGoop(GoopSpeed, fElapsedTime);
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
             UserInput(ArcherSpeed);
@@ -275,15 +284,15 @@ public:
 
 private:
     bool OnUserCreate() override {
+        //Spawn Archer in center
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
-        GoopAlive.push_back(true);
         //Sprites
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRight.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
-        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
+        Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
         GrassDecal = new olc::Decal(Grass.get());
         GoopRightDecal = new olc::Decal(GoopRight.get());
