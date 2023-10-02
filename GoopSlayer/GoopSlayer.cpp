@@ -7,12 +7,14 @@ class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
     std::unique_ptr<olc::Sprite> GoopRight;
+    std::unique_ptr<olc::Sprite> GoopLeft;
     std::unique_ptr<olc::Sprite> Grass;
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
     olc::Decal* GrassDecal;
     olc::Decal* GoopRightDecal;
+    olc::Decal* GoopLeftDecal;
     olc::Decal* ArcherRightDecal;
     olc::Decal* ArrowDecal;
     //Goop variables
@@ -24,6 +26,7 @@ public:
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
     olc::vf2d ArcherPos;
+    int score = 0;
     //Menu variables
     int menu = 0;
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
@@ -33,6 +36,22 @@ public:
         sAppName = "GoopSlayer";
     }
 
+    void DeadUserInputs() {
+        if (GetKey(olc::Key::SPACE).bPressed) {
+            GameState = MENU;
+        }
+        if (GetKey(olc::Key::ESCAPE).bPressed) {
+            GameState = QUIT;
+        }
+    }
+    void ArcherDead() {
+        Clear(olc::BLACK);
+        std::string ScoreString = std::to_string(score);
+        DrawString(ScreenWidth() / 5, ScreenHeight() / 9, "You've been slain!", olc::MAGENTA, 4);
+        DrawString(ScreenWidth() / 3 + 70, ScreenHeight() / 4, "Score:", olc::GREEN, 4);
+        DrawString(ScreenWidth() / 3 + 130, ScreenHeight() / 3, ScoreString, olc::GREEN, 4);
+        DrawString(ScreenWidth() / 7, ScreenHeight() / 2, "Press 'SPACE' to retry", olc::BLUE, 4);
+    }
     void MainMenu() {
         Clear(olc::BLACK);
         if (menu == 0) {
@@ -60,6 +79,17 @@ public:
             menu = 1;
         }
         if (GetKey(olc::Key::ENTER).bPressed && menu == 0) {
+            for (int k = 0; k < GoopPos.size(); k++) {
+                GoopPos.erase(GoopPos.begin() + k);
+            }
+            for (int k = 0; k < arrowPos.size(); k++) {
+                arrowPos.erase(arrowPos.begin() + k);
+                arrowVel.erase(arrowVel.begin() + k);
+            }
+            ArcherPos.x = 448.0f;
+            ArcherPos.y = 238.0f;
+            score = 0;
+
             GameState = GAME;
         }
         else if (GetKey(olc::Key::ENTER).bPressed && menu == 1) {
@@ -73,6 +103,22 @@ public:
             }
         }
     }
+    void SpawnGoop() {
+        if (GoopPos.size() == 0) {
+            //Random num gen to choose whether goop X or Y is zero
+            srand(time(NULL));
+            int SideGoopNum = rand() % 2;
+
+            if (SideGoopNum == 0) {
+                float GoopYNum = rand() % 539;
+                GoopPos.push_back({ 0, GoopYNum });
+            }
+            if (SideGoopNum == 1) {
+                float GoopXNum = rand() % 959;
+                GoopPos.push_back({ GoopXNum, 0 });
+            }
+        }
+    }
     void PlayerGoopCheck() {
         olc::vi2d Goop(GoopPos[0]);
         olc::vi2d GoopSize(64, 64);
@@ -83,7 +129,7 @@ public:
             Goop.x + GoopSize.x > Archer.x &&
             Goop.y < Archer.y + ArcherSize.y &&
             Goop.y + GoopSize.y > Archer.y) {
-            GoopPos[0].x = -30;
+            GameState = DEAD;
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
@@ -95,7 +141,12 @@ public:
             GoopPos[0] += dir * GoopSpeed;
 
             // Draw the Goop
-            DrawDecal({ GoopPos[0] }, GoopRightDecal, { 2.0f, 2.0f });
+            if (dir.x < 0) {
+                DrawDecal({ GoopPos[0] }, GoopLeftDecal, { 2.0f, 2.0f });
+            }
+            if (dir.x > 0) {
+                DrawDecal({ GoopPos[0] }, GoopRightDecal, { 2.0f, 2.0f });
+            }
 
             // Player+Goop Check
             PlayerGoopCheck();
@@ -117,7 +168,8 @@ public:
                     Arrow.y + ArrowSize.y > Goop.y) {
                     arrowPos.erase(arrowPos.begin() + k);
                     arrowVel.erase(arrowVel.begin() + k);
-                    GoopPos[o].x = -30;
+                    GoopPos.erase(GoopPos.begin() + o);
+                    score++;
                 }
             }
         }
@@ -199,14 +251,22 @@ public:
         if (GameState == GAME) {
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 250 * fElapsedTime;
+            SpawnGoop();
+            //Draw Grass
             DrawGrass();
             if (GoopAlive[0] == true) {
                 MoveGoop(GoopSpeed, fElapsedTime);
             }
+            //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
             UserInput(ArcherSpeed);
             ShootArrow(fElapsedTime);
 
+            return true;
+        }
+        if (GameState == DEAD) {
+            ArcherDead();
+            DeadUserInputs();
             return true;
         }
     }
@@ -215,16 +275,17 @@ private:
     bool OnUserCreate() override {
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
-        GoopPos.push_back({ 0, (float)ScreenHeight() / 4 });
         GoopAlive.push_back(true);
         //Sprites
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRight.png");
+        GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
         GrassDecal = new olc::Decal(Grass.get());
         GoopRightDecal = new olc::Decal(GoopRight.get());
+        GoopLeftDecal = new olc::Decal(GoopLeft.get());
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
         ArrowDecal = new olc::Decal(Arrow.get());
         return true;
