@@ -20,7 +20,6 @@ public:
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
-    int MaxGoops = 1;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
@@ -31,12 +30,24 @@ public:
     int menu = 0;
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
     GameStateEnum GameState = MENU;
-    int Wave = 0;
+    //Wave variables
+    int Wave = 1;
+    float Time = 0;
+    bool WaveDisplay = true;
+    int KilledGoops = 0;
+    int MaxGoops = 2;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
 
+    void DisplayWave() {
+        std::string WaveString = std::to_string(Wave);
+        DrawStringDecal({ (float)ScreenWidth() / 2 - 134, (float)ScreenHeight() / 3 + 3}, "Wave", olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 - 130, (float)ScreenHeight() / 3 }, "Wave", olc::WHITE, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 + 56, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
+    }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
             GameState = MENU;
@@ -92,6 +103,11 @@ public:
             ArcherPos.x = 448.0f;
             ArcherPos.y = 238.0f;
             score = 0;
+            MaxGoops = 2;
+            Wave = 1;
+            Time = 0;
+            KilledGoops = 0;
+            WaveDisplay = true;
 
             GameState = GAME;
         }
@@ -108,9 +124,8 @@ public:
     }
     void SpawnGoop() {
         if (GoopPos.size() == 0) {
-            //Random num gen to choose whether goop X or Y is zero
+            //Goop random coord gen (walls)
             for (int k = 0; k < MaxGoops; k++) {
-                srand(time(NULL));
                 int SideGoopNum = rand() % 4;
 
                 if (SideGoopNum == 0) {
@@ -147,13 +162,13 @@ public:
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
         // Calculate direction towards the player
-        olc::vf2d dir = (ArcherPos - GoopPos[0]).norm();
-
-        // Calculate the new position based on direction and speed
-        GoopPos[0] += dir * GoopSpeed;
-
-        // Draw the Goop
         for (int k = 0; k < GoopPos.size(); k++) {
+            olc::vf2d dir = (ArcherPos - GoopPos[k]).norm();
+
+            // Calculate the new position based on direction and speed
+            GoopPos[k] += dir * GoopSpeed;
+
+            // Draw the Goop
             if (dir.x < 0) {
                 DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
             }
@@ -262,18 +277,31 @@ public:
             return false;
         }
         if (GameState == GAME) {
+            Clear(olc::BLACK);
+            Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 250 * fElapsedTime;
-            SpawnGoop();
+
             //Draw Grass
             DrawGrass();
-            MoveGoop(GoopSpeed, fElapsedTime);
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
             UserInput(ArcherSpeed);
             ShootArrow(fElapsedTime);
+            if (Time <= 5.0f && WaveDisplay == true) {
+                DisplayWave();
+            }
+            if (Time >= 5.0f && WaveDisplay == true) {
+                WaveDisplay = false;
+                Time = 0.0f;
+            }
+            if (Time >= 1.0f && WaveDisplay == false) {
+                //SpawnGoop
+                SpawnGoop();
+                MoveGoop(GoopSpeed, fElapsedTime);
 
-            return true;
+                return true;
+            }
         }
         if (GameState == DEAD) {
             ArcherDead();
@@ -284,6 +312,7 @@ public:
 
 private:
     bool OnUserCreate() override {
+        srand(time(NULL));
         //Spawn Archer in center
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
