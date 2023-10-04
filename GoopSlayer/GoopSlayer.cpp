@@ -35,15 +35,33 @@ public:
     float Time = 0;
     bool WaveDisplay = true;
     int KilledGoops = 0;
-    int MaxGoops = 2;
+    int MaxGoops = 1;
+    int MaxGoopIncrease = 0;
+    int TotalGoops = 3;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
 
+    void WaveCheck() {
+        if (KilledGoops == TotalGoops) {
+            KilledGoops = 0;
+            Time = 0.0f;
+            WaveDisplay = true;
+            Wave++;
+            TotalGoops += 2;
+            if (MaxGoops < 4 && MaxGoopIncrease == 3) {
+                MaxGoops++;
+                MaxGoopIncrease = 0;
+            }
+            if (MaxGoopIncrease < 3) {
+                MaxGoopIncrease++;
+            }
+        }
+    }
     void DisplayWave() {
         std::string WaveString = std::to_string(Wave);
-        DrawStringDecal({ (float)ScreenWidth() / 2 - 134, (float)ScreenHeight() / 3 + 3}, "Wave", olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 - 134, (float)ScreenHeight() / 3 + 3 }, "Wave", olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 - 130, (float)ScreenHeight() / 3 }, "Wave", olc::WHITE, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 56, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
@@ -103,10 +121,11 @@ public:
             ArcherPos.x = 448.0f;
             ArcherPos.y = 238.0f;
             score = 0;
-            MaxGoops = 2;
+            MaxGoops = 1;
             Wave = 1;
             Time = 0;
             KilledGoops = 0;
+            TotalGoops = 3;
             WaveDisplay = true;
 
             GameState = GAME;
@@ -124,7 +143,7 @@ public:
     }
     void SpawnGoop() {
         if (GoopPos.size() == 0) {
-            //Goop random coord gen (walls)
+            //Goop random coord gen (walls) (spawns max goops)
             for (int k = 0; k < MaxGoops; k++) {
                 int SideGoopNum = rand() % 4;
 
@@ -161,8 +180,8 @@ public:
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
-        // Calculate direction towards the player
         for (int k = 0; k < GoopPos.size(); k++) {
+            // Calculate direction towards the player
             olc::vf2d dir = (ArcherPos - GoopPos[k]).norm();
 
             // Calculate the new position based on direction and speed
@@ -198,6 +217,7 @@ public:
                     arrowVel.erase(arrowVel.begin() + k);
                     GoopPos.erase(GoopPos.begin() + o);
                     score++;
+                    KilledGoops++;
                 }
             }
         }
@@ -280,17 +300,18 @@ public:
             Clear(olc::BLACK);
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
-            float GoopSpeed = 250 * fElapsedTime;
+            float GoopSpeed = 210 * fElapsedTime;
 
             //Draw Grass
             DrawGrass();
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { (float)2, (float)2 });
-            UserInput(ArcherSpeed);
-            ShootArrow(fElapsedTime);
             if (Time <= 5.0f && WaveDisplay == true) {
                 DisplayWave();
             }
+            UserInput(ArcherSpeed);
+            ShootArrow(fElapsedTime);
+            WaveCheck();
             if (Time >= 5.0f && WaveDisplay == true) {
                 WaveDisplay = false;
                 Time = 0.0f;
