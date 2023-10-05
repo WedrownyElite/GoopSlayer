@@ -6,6 +6,7 @@
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> GoopSlayerLogo;
     std::unique_ptr<olc::Sprite> SpookyLogo;
     std::unique_ptr<olc::Sprite> Spiderweb1;
     std::unique_ptr<olc::Sprite> Spiderweb2;
@@ -17,6 +18,7 @@ public:
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
+    olc::Decal* GoopSlayerLogoDecal;
     olc::Decal* SpookyLogoDecal;
     olc::Decal* Spiderweb1Decal;
     olc::Decal* Spiderweb2Decal;
@@ -99,23 +101,24 @@ public:
         DrawDecal({ 864.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
     }
     void MainMenu() {
+        Clear(olc::BLACK);
         if (menu == 0) {
             DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 30, -30.0f }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 220, (float)ScreenHeight() / 3 - 50 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 3 - 50 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 3, "Goop Slayer", olc::MAGENTA, 6);
-            DrawString(ScreenWidth() / 3, ScreenHeight() / 3 + 90, ">> Play", olc::GREEN, 4);
-            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 2 + 70, "Quit", olc::RED, 4);
+            DrawDecal({ (float)ScreenWidth() / 4 + 30, (float)ScreenHeight() / 10 - 93 }, SpookyLogoDecal, {3.0f, 3.0f});
+            DrawDecal({ (float)ScreenWidth() - 260, (float)ScreenHeight() / 3 - 50 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 40, (float)ScreenHeight() / 3 - 50 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 50, (float)ScreenHeight() / 4 - 10 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawString(ScreenWidth() / 3, ScreenHeight() / 3 + 100, ">> Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 2 + 80, "Quit", olc::RED, 4);
         }
         else if (menu == 1) {
             DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 30, -30.0f }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 220, (float)ScreenHeight() / 3 - 50 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 20, (float)ScreenHeight() / 3 - 50 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawString(ScreenWidth() / 5 + 30, ScreenHeight() / 3, "Goop Slayer", olc::MAGENTA, 6);
-            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 3 + 90, "Play", olc::GREEN, 4);
-            DrawString(ScreenWidth() / 3, ScreenHeight() / 2 + 70, ">> Quit", olc::RED, 4);
+            DrawDecal({ (float)ScreenWidth() / 4 + 30, (float)ScreenHeight() / 10 - 93 }, SpookyLogoDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() - 260, (float)ScreenHeight() / 3 - 50 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 40, (float)ScreenHeight() / 3 - 50 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 50, (float)ScreenHeight() / 4 - 10 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 3 + 100, "Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3, ScreenHeight() / 2 + 80, ">> Quit", olc::RED, 4);
         }
         if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu < 1) {
             menu++;
@@ -149,7 +152,8 @@ public:
 
             GameState = GAME;
         }
-        else if (GetKey(olc::Key::ENTER).bPressed && menu == 1) {
+        if (GetKey(olc::Key::ENTER).bPressed && menu == 1) {
+            WaveDisplay = false;
             GameState = QUIT;
         }
     }
@@ -358,6 +362,7 @@ private:
     bool OnUserCreate() override {
         srand(time(NULL));
         //Sprites
+        GoopSlayerLogo = std::make_unique<olc::Sprite>("./Sprites/GoopSlayer.png");
         SpookyLogo = std::make_unique<olc::Sprite>("./Sprites/Spooky.png");
         Spiderweb1 = std::make_unique<olc::Sprite>("./Sprites/Spiderweb1.png");
         Spiderweb2 = std::make_unique<olc::Sprite>("./Sprites/Spiderweb2.png");
@@ -369,6 +374,7 @@ private:
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
+        GoopSlayerLogoDecal = new olc::Decal(GoopSlayerLogo.get());
         SpookyLogoDecal = new olc::Decal(SpookyLogo.get());
         Spiderweb1Decal = new olc::Decal(Spiderweb1.get());
         Spiderweb2Decal = new olc::Decal(Spiderweb2.get());
