@@ -2,6 +2,12 @@
 #include "olcPixelGameEngine.h"
 #include <iostream>
 #include <vector>
+#include <cmath>
+
+// Define M_PI if it's not already defined
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
 
 class GoopSlayer : public olc::PixelGameEngine {
 public:
@@ -53,6 +59,7 @@ public:
     int Wave = 1;
     float Time = 0;
     float SkillCooldownTimer = 0;
+    float CooldownNum = 0;
     bool WaveDisplay = true;
     int KilledGoops = 0;
     int MaxGoops = 1;
@@ -294,7 +301,24 @@ if (dir.x > 0) {
         }
         DrawArrow(fElapsedTime);
     }
-    void UserInput(float ArcherSpeed) {
+    void SpawnArrowRing(float fElapsedTime) {
+        float angleIncrement = 360.0f / 12.0f; // Divide 360 degrees into 12 directions
+
+        for (int i = 0; i < 12; i++) {
+            // Calculate the direction vector for each arrow
+            float angle = i * angleIncrement;
+            olc::vf2d direction = { cosf(M_PI * angle / 180.0f), sinf(M_PI * angle / 180.0f) };
+
+            // Calculate the velocity of the arrow
+            olc::vf2d vel = direction * 500.0f;
+
+            // Store the arrow's position and velocity
+            arrowPos.push_back({ ArcherPos.x + 15, ArcherPos.y + 15 });
+            arrowVel.push_back(vel);
+        }
+    }
+
+    void UserInput(float ArcherSpeed, float fElapsedTime) {
         if ((GetKey(olc::Key::LEFT).bHeld || (GetKey(olc::Key::A).bHeld)) && ArcherPos.x < 905 && ArcherPos.x > -5) {
             ArcherPos.x -= ArcherSpeed;
         }
@@ -319,18 +343,24 @@ if (dir.x > 0) {
         if (ArcherPos.y < -5) {
             ArcherPos.y = -4;
         }
-        if (GetKey(olc::Key::SPACE).bPressed && SkillUsed == false) {
+        if (GetKey(olc::Key::E).bPressed && SkillUsed == false) {
+            SpawnArrowRing(fElapsedTime);
             SkillUsed = true;
         }
     }
-    void DrawSkillUI() {
+    void DrawSkillUI(float fElapsedTime) {
         DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, SkillUIDecal, { 2.0f, 2.0f});
         DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, ArrowBarrageDecal, { 2.0f, 2.0f });
         if (SkillUsed == true) {
-            int i = 0;
-            i++;
-            DrawPartialDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 + i }, { 64.0f, 64.0f - i }, CooldownDecal,
-                { (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, { 64.0f, 64.0f });
+            if (CooldownNum < 64.0f) {
+                DrawPartialDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 + CooldownNum }, 
+                    { 64.0f, 64.0f - CooldownNum }, CooldownDecal, { (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, { 64.0f, 64.0f });
+                CooldownNum += 0.10f;
+            }
+        }
+        if (CooldownNum >= 64.0f) {
+            CooldownNum = 0;
+            SkillUsed = false;
         }
     }
     bool OnUserUpdate(float fElapsedTime) override {
@@ -345,7 +375,7 @@ if (dir.x > 0) {
             Clear(olc::BLACK);
             //Draw Grass
             GrassDrawn = DrawGrass();
-
+            //Timers
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 210 * fElapsedTime;
@@ -355,7 +385,7 @@ if (dir.x > 0) {
             if (Time <= 5.0f && WaveDisplay == true) {
                 DisplayWave();
             }
-            UserInput(ArcherSpeed);
+            UserInput(ArcherSpeed, fElapsedTime);
             ShootArrow(fElapsedTime);
             WaveCheck();
             if (Time >= 5.0f && WaveDisplay == true) {
@@ -367,10 +397,7 @@ if (dir.x > 0) {
                 SpawnGoop();
                 MoveGoop(GoopSpeed, fElapsedTime);
             }
-            if (SkillUsed == true) {
-                SkillCooldownTimer += fElapsedTime;
-            }
-            DrawSkillUI();
+            DrawSkillUI(fElapsedTime);
 
             //Draw webs
             DrawSpiderwebs();
