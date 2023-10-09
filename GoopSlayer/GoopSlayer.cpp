@@ -6,6 +6,8 @@
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> Cooldown;
+    std::unique_ptr<olc::Sprite> ArrowBarrage;
     std::unique_ptr<olc::Sprite> SkillUI;
     std::unique_ptr<olc::Sprite> GoopSlayerLogo;
     std::unique_ptr<olc::Sprite> SpookyLogo;
@@ -19,6 +21,8 @@ public:
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
+    olc::Decal* CooldownDecal;
+    olc::Decal* ArrowBarrageDecal;
     olc::Decal* SkillUIDecal;
     olc::Decal* GoopSlayerLogoDecal;
     olc::Decal* SpookyLogoDecal;
@@ -40,6 +44,7 @@ public:
     //Archer variables
     olc::vf2d ArcherPos = { 448.0f, 238.0f };
     int score = 0;
+    bool SkillUsed = false;
     //Menu variables
     int menu = 0;
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
@@ -47,6 +52,7 @@ public:
     //Wave variables
     int Wave = 1;
     float Time = 0;
+    float SkillCooldownTimer = 0;
     bool WaveDisplay = true;
     int KilledGoops = 0;
     int MaxGoops = 1;
@@ -214,12 +220,12 @@ public:
             GoopPos[k] += dir * GoopSpeed;
 
             // Draw the Goop
-            if (dir.x < 0) {
-                DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
-            }
-            if (dir.x > 0) {
-                DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
-            }
+if (dir.x < 0) {
+    DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
+}
+if (dir.x > 0) {
+    DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
+}
         }
 
         // Player+Goop Check
@@ -313,10 +319,19 @@ public:
         if (ArcherPos.y < -5) {
             ArcherPos.y = -4;
         }
-
+        if (GetKey(olc::Key::SPACE).bPressed && SkillUsed == false) {
+            SkillUsed = true;
+        }
     }
-    void SkillUI() {
-        DrawDecal({ (float)ScreenWidth() / 2 - 64, (float)ScreenHeight() - 80}, SkillUIDecal, {2.0f, 2.0f});
+    void DrawSkillUI() {
+        DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, SkillUIDecal, { 2.0f, 2.0f});
+        DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, ArrowBarrageDecal, { 2.0f, 2.0f });
+        if (SkillUsed == true) {
+            int i = 0;
+            i++;
+            DrawPartialDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 + i }, { 64.0f, 64.0f - i }, CooldownDecal,
+                { (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, { 64.0f, 64.0f });
+        }
     }
     bool OnUserUpdate(float fElapsedTime) override {
         if (GameState == MENU) {
@@ -352,6 +367,11 @@ public:
                 SpawnGoop();
                 MoveGoop(GoopSpeed, fElapsedTime);
             }
+            if (SkillUsed == true) {
+                SkillCooldownTimer += fElapsedTime;
+            }
+            DrawSkillUI();
+
             //Draw webs
             DrawSpiderwebs();
             return true;
@@ -368,6 +388,8 @@ private:
     bool OnUserCreate() override {
         srand(time(NULL));
         //Sprites
+        Cooldown = std::make_unique<olc::Sprite>("./Sprites/Cooldown.png");
+        ArrowBarrage = std::make_unique < olc::Sprite>("./Sprites/ArrowBarrageSkill.png");
         SkillUI = std::make_unique<olc::Sprite>("./Sprites/SkillBox.png");
         GoopSlayerLogo = std::make_unique<olc::Sprite>("./Sprites/GoopSlayer.png");
         SpookyLogo = std::make_unique<olc::Sprite>("./Sprites/Spooky.png");
@@ -381,6 +403,8 @@ private:
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
+        CooldownDecal = new olc::Decal(Cooldown.get());
+        ArrowBarrageDecal = new olc::Decal(ArrowBarrage.get());
         SkillUIDecal = new olc::Decal(SkillUI.get());
         GoopSlayerLogoDecal = new olc::Decal(GoopSlayerLogo.get());
         SpookyLogoDecal = new olc::Decal(SpookyLogo.get());
