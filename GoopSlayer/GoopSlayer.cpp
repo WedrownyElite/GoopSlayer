@@ -1,17 +1,15 @@
 #define OLC_PGE_APPLICATION
+#define _USE_MATH_DEFINES
 #include "olcPixelGameEngine.h"
 #include <iostream>
 #include <vector>
 #include <cmath>
 
-// Define M_PI if it's not already defined
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288
-#endif
-
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> Flashlight;
+    std::unique_ptr<olc::Sprite> MenuBackground;
     std::unique_ptr<olc::Sprite> MenuArrow;
     std::unique_ptr<olc::Sprite> Quit;
     std::unique_ptr<olc::Sprite> Play;
@@ -30,6 +28,8 @@ public:
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
+    olc::Decal* FlashlightDecal;
+    olc::Decal* MenuBackgroundDecal;
     olc::Decal* MenuArrowDecal;
     olc::Decal* QuitDecal;
     olc::Decal* PlayDecal;
@@ -78,7 +78,7 @@ public:
     }
 
     void WaveCheck() {
-        if (KilledGoops == TotalGoops) {
+        if (KilledGoops >= TotalGoops && GoopPos.size() == 0) {
             KilledGoops = 0;
             Time = 0.0f;
             WaveDisplay = true;
@@ -372,6 +372,14 @@ public:
     }
     bool OnUserUpdate(float fElapsedTime) override {
         if (GameState == MENU) {
+            float FlashlightX = GetMouseX();
+            float FlashlightY = GetMouseY();
+            DrawDecal({ 0.0f, 0.0f }, MenuBackgroundDecal, { 1.0f, 1.0f });
+            DrawDecal({ FlashlightX - 32, FlashlightY - 32 }, FlashlightDecal, { 2.0f, 2.0f });
+            FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 32 }, olc::BLACK);
+            FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 32, 576 }, olc::BLACK);
+            FillRectDecal({ (float)FlashlightX + 32, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
+            FillRectDecal({ 0.0f, (float)FlashlightY + 32 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
             MainMenu();
             return true;
         }
@@ -422,6 +430,8 @@ private:
     bool OnUserCreate() override {
         srand(time(NULL));
         //Sprites
+        Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight.png");
+        MenuBackground = std::make_unique<olc::Sprite>("./Sprites/MenuBackgroundTest.png");
         MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
         Play = std::make_unique<olc::Sprite>("./Sprites/Play.png");
@@ -440,6 +450,8 @@ private:
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
+        FlashlightDecal = new olc::Decal(Flashlight.get());
+        MenuBackgroundDecal = new olc::Decal(MenuBackground.get());
         MenuArrowDecal = new olc::Decal(MenuArrow.get());
         QuitDecal = new olc::Decal(Quit.get());
         PlayDecal = new olc::Decal(Play.get());
