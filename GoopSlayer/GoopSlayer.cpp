@@ -122,62 +122,60 @@ public:
         DrawDecal({ 928.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
     }
     void MainMenu() {
-        Clear(olc::BLACK);
-        if (menu == 0) {
+        if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365) {
             DrawSpiderwebs();
             DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
             DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
             DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
             DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 10, (float)ScreenHeight() / 3 + 110 }, MenuArrowDecal, { 1.0f, 1.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f });
-        }
-        else if (menu == 1) {
-            DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 10, (float)ScreenHeight() / 2 + 110 }, MenuArrowDecal, { 1.0f, 1.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f });
-        }
-        if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu < 1) {
-            menu++;
-        }
-        else if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu == 1) {
-            menu = 0;
-        }
-        else if ((GetKey(olc::Key::UP).bPressed || (GetKey(olc::Key::W).bPressed)) && menu > 0) {
-            menu--;
-        }
-        else if ((GetKey(olc::Key::UP).bPressed || (GetKey(olc::Key::W).bPressed)) && menu == 0) {
-            menu = 1;
-        }
-        if ((GetKey(olc::Key::ENTER).bPressed) || (GetKey(olc::Key::E).bPressed) && menu == 0) {
-            for (int k = 0; k < GoopPos.size(); k++) {
-                GoopPos.erase(GoopPos.begin() + k);
-            }
-            for (int k = 0; k < arrowPos.size(); k++) {
-                arrowPos.erase(arrowPos.begin() + k);
-                arrowVel.erase(arrowVel.begin() + k);
-            }
-            ArcherPos.x = 448.0f;
-            ArcherPos.y = 238.0f;
-            score = 0;
-            MaxGoops = 1;
-            Wave = 1;
-            Time = 0;
-            KilledGoops = 0;
-            TotalGoops = 3;
-            WaveDisplay = true;
+            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.15f, 1.15f }); //Play 128x64
+            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f }); //Quit 128x64
+            if (GetMouse(0).bPressed) {
+                for (int k = 0; k < GoopPos.size(); k++) {
+                    GoopPos.erase(GoopPos.begin() + k);
+                }
+                for (int k = 0; k < arrowPos.size(); k++) {
+                    arrowPos.erase(arrowPos.begin() + k);
+                    arrowVel.erase(arrowVel.begin() + k);
+                }
+                ArcherPos.x = 448.0f;
+                ArcherPos.y = 238.0f;
+                score = 0;
+                MaxGoops = 1;
+                Wave = 1;
+                Time = 0;
+                KilledGoops = 0;
+                TotalGoops = 3;
+                WaveDisplay = true;
+                SkillCooldownTimer = 0;
+                SkillUsed = false;
 
-            GameState = GAME;
+                GameState = GAME;
+            }
         }
-        if (GetKey(olc::Key::ENTER).bPressed && menu == 1) {
-            WaveDisplay = false;
-            GameState = QUIT;
+        if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460) {
+            DrawSpiderwebs();
+            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f }); //Play 128x64
+            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.15f, 1.15f }); //Quit 128x64
+            if (GetMouse(0).bPressed) {
+                WaveDisplay = false;
+                GameState = QUIT;
+            }
+        }
+        else {
+            Clear(olc::BLACK);
+            DrawSpiderwebs();
+            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f }); //Play 128x64
+            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f }); //Quit 128x64
+
         }
     }
     bool DrawGrass() {
@@ -381,6 +379,10 @@ public:
             FillRectDecal({ (float)FlashlightX + 32, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
             FillRectDecal({ 0.0f, (float)FlashlightY + 32 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
             MainMenu();
+            std::string FlashlightXS = std::to_string(FlashlightX);
+            std::string FlashLightYS = std::to_string(FlashlightY);
+            DrawStringDecal({ 10.0f, 10.0f }, FlashlightXS, olc::WHITE, { 2.0f, 2.0f });
+            DrawStringDecal({ 10.0f, 30.0f }, FlashLightYS, olc::WHITE, { 2.0f, 2.0f });
             return true;
         }
         if (GameState == QUIT) {
