@@ -110,30 +110,30 @@ public:
         DrawString(ScreenWidth() / 7, ScreenHeight() / 2, "Press 'SPACE' to retry", olc::BLUE, 4);
     }
     void DrawSpiderwebs() {
-        DrawDecal({ 895.0f, 475.0f }, Spiderweb2Decal, { 2.0f, 2.0f });
-        DrawDecal({ 0.0f, 477.0f }, Spiderweb1Decal, { 2.0f, 2.0f });
+        DrawDecal({ 960.0f, 515.0f }, Spiderweb2Decal, { 2.0f, 2.0f });
+        DrawDecal({ 0.0f, 515.0f }, Spiderweb1Decal, { 2.0f, 2.0f });
         DrawDecal({ 0.0f, 0.0f }, Spiderweb3Decal, { 2.0f, 2.0f });
-        DrawDecal({ 864.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
+        DrawDecal({ 928.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
     }
     void MainMenu() {
         Clear(olc::BLACK);
         if (menu == 0) {
             DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 30, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, {3.0f, 3.0f});
-            DrawDecal({ (float)ScreenWidth() - 260, (float)ScreenHeight() / 3 - 40 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 40, (float)ScreenHeight() / 3 - 40 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 50, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawString(ScreenWidth() / 3, ScreenHeight() / 3 + 110, ">> Play", olc::GREEN, 4);
-            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 2 + 90, "Quit", olc::RED, 4);
+            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, {3.0f, 3.0f});
+            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawString(ScreenWidth() / 3 + 20, ScreenHeight() / 3 + 130, ">> Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3 + 116, ScreenHeight() / 2 + 110, "Quit", olc::RED, 4);
         }
         else if (menu == 1) {
             DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 30, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 260, (float)ScreenHeight() / 3 - 40 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 40, (float)ScreenHeight() / 3 - 40 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 50, (float)ScreenHeight() / 4  }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawString(ScreenWidth() / 3 + 96, ScreenHeight() / 3 + 110, "Play", olc::GREEN, 4);
-            DrawString(ScreenWidth() / 3, ScreenHeight() / 2 + 90, ">> Quit", olc::RED, 4);
+            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
+            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4  }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+            DrawString(ScreenWidth() / 3 + 116, ScreenHeight() / 3 + 130, "Play", olc::GREEN, 4);
+            DrawString(ScreenWidth() / 3 + 20, ScreenHeight() / 2 + 110, ">> Quit", olc::RED, 4);
         }
         if ((GetKey(olc::Key::DOWN).bPressed || (GetKey(olc::Key::S).bPressed)) && menu < 1) {
             menu++;
@@ -173,8 +173,8 @@ public:
         }
     }
     bool DrawGrass() {
-        for (int x = 0; x < 960; x += 32) {
-            for (int y = 0; y < 540; y += 32) {
+        for (int x = 0; x < 1024; x += 32) {
+            for (int y = 0; y < 576; y += 32) {
                 DrawDecal({ (float)x, (float)y }, GrassDecal);
             }
         }
@@ -187,20 +187,20 @@ public:
                 int SideGoopNum = rand() % 4;
 
                 if (SideGoopNum == 0) {
-                    float GoopYNum= rand() % 539;
+                    float GoopYNum= rand() % 575;
                     GoopPos.push_back({ 0.f, GoopYNum });
                 }
                 if (SideGoopNum == 1) {
-                    float GoopXNum = rand() % 959;
+                    float GoopXNum = rand() % 1023;
                     GoopPos.push_back({ GoopXNum, 0 });
                 }
                 if (SideGoopNum == 2) {
-                    float GoopXNum = rand() % 959;
-                    GoopPos.push_back({ GoopXNum, 540 });
+                    float GoopXNum = rand() % 1023;
+                    GoopPos.push_back({ GoopXNum, 575 });
                 }
                 if (SideGoopNum == 3) {
-                    float GoopYNum = rand() % 539;
-                    GoopPos.push_back({ 960, GoopYNum });
+                    float GoopYNum = rand() % 575;
+                    GoopPos.push_back({ 1023, GoopYNum });
                 }
             }
         }
@@ -319,26 +319,26 @@ if (dir.x > 0) {
     }
 
     void UserInput(float ArcherSpeed, float fElapsedTime) {
-        if ((GetKey(olc::Key::LEFT).bHeld || (GetKey(olc::Key::A).bHeld)) && ArcherPos.x < 905 && ArcherPos.x > -5) {
+        if ((GetKey(olc::Key::LEFT).bHeld || (GetKey(olc::Key::A).bHeld)) && ArcherPos.x < 1024 && ArcherPos.x > -5) {
             ArcherPos.x -= ArcherSpeed;
         }
-        if ((GetKey(olc::Key::RIGHT).bHeld || (GetKey(olc::Key::D).bHeld)) && ArcherPos.x < 920 && ArcherPos.x > -5) {
+        if ((GetKey(olc::Key::RIGHT).bHeld || (GetKey(olc::Key::D).bHeld)) && ArcherPos.x < 1024 && ArcherPos.x > -5) {
             ArcherPos.x += ArcherSpeed;
         }
-        if ((GetKey(olc::Key::UP).bHeld || (GetKey(olc::Key::W).bHeld)) && ArcherPos.y < 479 && ArcherPos.y > -5) {
+        if ((GetKey(olc::Key::UP).bHeld || (GetKey(olc::Key::W).bHeld)) && ArcherPos.y < 575 && ArcherPos.y > -5) {
             ArcherPos.y -= ArcherSpeed;
         }
-        if ((GetKey(olc::Key::DOWN).bHeld || (GetKey(olc::Key::S).bHeld)) && ArcherPos.y < 479 && ArcherPos.y > -5) {
+        if ((GetKey(olc::Key::DOWN).bHeld || (GetKey(olc::Key::S).bHeld)) && ArcherPos.y < 575 && ArcherPos.y > -5) {
             ArcherPos.y += ArcherSpeed;
         }
-        if (ArcherPos.x > 905) {
-            ArcherPos.x = 904;
+        if (ArcherPos.x > 960) {
+            ArcherPos.x = 959;
         }
         if (ArcherPos.x < -5) {
             ArcherPos.x = -4;
         }
-        if (ArcherPos.y > 479) {
-            ArcherPos.y = 478;
+        if (ArcherPos.y > 512) {
+            ArcherPos.y = 511;
         }
         if (ArcherPos.y < -5) {
             ArcherPos.y = -4;
@@ -450,7 +450,7 @@ private:
 
 int main() {
     GoopSlayer demo;
-    if (demo.Construct(960, 540, 1, 1, true))
+    if (demo.Construct(1024, 576, 1, 1, true))
         demo.Start();
     return 0;
 }
