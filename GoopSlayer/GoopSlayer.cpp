@@ -76,7 +76,16 @@ public:
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
-
+    void MenuFlashlight() {
+        float FlashlightX = GetMouseX();
+        float FlashlightY = GetMouseY();
+        DrawDecal({ 0.0f, 0.0f }, MenuBackgroundDecal, { 1.0f, 1.0f });
+        DrawDecal({ FlashlightX - 48, FlashlightY - 48 }, FlashlightDecal, { 3.0f, 3.0f });
+        FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 48 }, olc::BLACK);
+        FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 48, 576 }, olc::BLACK);
+        FillRectDecal({ (float)FlashlightX + 48, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
+        FillRectDecal({ 0.0f, (float)FlashlightY + 48 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
+    }
     void WaveCheck() {
         if (KilledGoops >= TotalGoops && GoopPos.size() == 0) {
             KilledGoops = 0;
@@ -102,6 +111,24 @@ public:
     }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
+            for (int k = 0; k < GoopPos.size(); k++) {
+                GoopPos.erase(GoopPos.begin() + k);
+            }
+            for (int k = 0; k < arrowPos.size(); k++) {
+                arrowPos.erase(arrowPos.begin() + k);
+                arrowVel.erase(arrowVel.begin() + k);
+            }
+            ArcherPos.x = 448.0f;
+            ArcherPos.y = 238.0f;
+            score = 0;
+            MaxGoops = 1;
+            Wave = 1;
+            Time = 0;
+            KilledGoops = 0;
+            TotalGoops = 3;
+            WaveDisplay = true;
+            SkillCooldownTimer = 0;
+            SkillUsed = false;
             GameState = MENU;
         }
         if (GetKey(olc::Key::ESCAPE).bPressed) {
@@ -122,61 +149,36 @@ public:
         DrawDecal({ 928.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
     }
     void MainMenu() {
-        if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365) {
-            DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.15f, 1.15f }); //Play 128x64
-            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f }); //Quit 128x64
-            if (GetMouse(0).bPressed) {
-                for (int k = 0; k < GoopPos.size(); k++) {
-                    GoopPos.erase(GoopPos.begin() + k);
-                }
-                for (int k = 0; k < arrowPos.size(); k++) {
-                    arrowPos.erase(arrowPos.begin() + k);
-                    arrowVel.erase(arrowVel.begin() + k);
-                }
-                ArcherPos.x = 448.0f;
-                ArcherPos.y = 238.0f;
-                score = 0;
-                MaxGoops = 1;
-                Wave = 1;
-                Time = 0;
-                KilledGoops = 0;
-                TotalGoops = 3;
-                WaveDisplay = true;
-                SkillCooldownTimer = 0;
-                SkillUsed = false;
+        const bool play_hovered = (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365);
+        const bool quit_hovered = (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460);
+        const olc::vf2d scale = { 1.0f, 1.0f };
+        const float play_zoom = play_hovered ? 1.15f : 1.0f;
+        const float quit_zoom = quit_hovered ? 1.15f : 1.0f;
+        const float play_XCoord = play_hovered ? ScreenWidth() / 3 + 80 : ScreenWidth() / 3 + 90;
+        const float play_YCoord = play_hovered ? ScreenHeight() / 3 + 105 : ScreenHeight() / 3 + 110;
+        const float quit_XCoord = quit_hovered ? ScreenWidth() / 3 + 85 : ScreenWidth() / 3 + 95;
+        const float quit_YCoord = quit_hovered ? ScreenHeight() / 2 + 105 : ScreenHeight() / 2 + 110;
 
-                GameState = GAME;
-            }
+        DrawSpiderwebs();
+        DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
+        DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+        DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
+        DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
+        DrawDecal({ play_XCoord, play_YCoord }, PlayDecal, scale * play_zoom);
+        DrawDecal({ quit_XCoord, quit_YCoord }, QuitDecal, scale * quit_zoom);
+        if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365 && (GetMouse(0).bPressed)) {
+            GameState = GAME;
         }
-        if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460) {
-            DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f }); //Play 128x64
-            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.15f, 1.15f }); //Quit 128x64
-            if (GetMouse(0).bPressed) {
-                WaveDisplay = false;
-                GameState = QUIT;
-            }
+        if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460 && (GetMouse(0).bPressed)) {
+            WaveDisplay = false;
+            GameState = QUIT;
         }
-        else {
-            Clear(olc::BLACK);
-            DrawSpiderwebs();
-            DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
-            DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
-            DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
-            DrawDecal({ (float)ScreenWidth() / 3 + 90, (float)ScreenHeight() / 3 + 110 }, PlayDecal, { 1.0f, 1.0f }); //Play 128x64
-            DrawDecal({ (float)ScreenWidth() / 3 + 95, (float)ScreenHeight() / 2 + 110 }, QuitDecal, { 1.0f, 1.0f }); //Quit 128x64
-
-        }
+        float FlashlightX = GetMouseX();
+        float FlashlightY = GetMouseY();
+        std::string FlashlightXS = std::to_string(FlashlightX);
+        std::string FlashLightYS = std::to_string(FlashlightY);
+        DrawStringDecal({ 10.0f, 10.0f }, FlashlightXS, olc::WHITE, { 2.0f, 2.0f });
+        DrawStringDecal({ 10.0f, 30.0f }, FlashLightYS, olc::WHITE, { 2.0f, 2.0f });
     }
     bool DrawGrass() {
         for (int x = 0; x < 1024; x += 32) {
@@ -370,19 +372,8 @@ public:
     }
     bool OnUserUpdate(float fElapsedTime) override {
         if (GameState == MENU) {
-            float FlashlightX = GetMouseX();
-            float FlashlightY = GetMouseY();
-            DrawDecal({ 0.0f, 0.0f }, MenuBackgroundDecal, { 1.0f, 1.0f });
-            DrawDecal({ FlashlightX - 32, FlashlightY - 32 }, FlashlightDecal, { 2.0f, 2.0f });
-            FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 32 }, olc::BLACK);
-            FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 32, 576 }, olc::BLACK);
-            FillRectDecal({ (float)FlashlightX + 32, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
-            FillRectDecal({ 0.0f, (float)FlashlightY + 32 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
+            MenuFlashlight();
             MainMenu();
-            std::string FlashlightXS = std::to_string(FlashlightX);
-            std::string FlashLightYS = std::to_string(FlashlightY);
-            DrawStringDecal({ 10.0f, 10.0f }, FlashlightXS, olc::WHITE, { 2.0f, 2.0f });
-            DrawStringDecal({ 10.0f, 30.0f }, FlashLightYS, olc::WHITE, { 2.0f, 2.0f });
             return true;
         }
         if (GameState == QUIT) {
@@ -433,7 +424,7 @@ private:
         srand(time(NULL));
         //Sprites
         Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight.png");
-        MenuBackground = std::make_unique<olc::Sprite>("./Sprites/MenuBackgroundTest.png");
+        MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticTest.png");
         MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
         Play = std::make_unique<olc::Sprite>("./Sprites/Play.png");
