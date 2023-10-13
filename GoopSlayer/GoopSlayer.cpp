@@ -169,12 +169,6 @@ public:
             WaveDisplay = false;
             GameState = QUIT;
         }
-        float FlashlightX = GetMouseX();
-        float FlashlightY = GetMouseY();
-        std::string FlashlightXS = std::to_string(FlashlightX);
-        std::string FlashLightYS = std::to_string(FlashlightY);
-        DrawStringDecal({ 10.0f, 10.0f }, FlashlightXS, olc::WHITE, { 2.0f, 2.0f });
-        DrawStringDecal({ 10.0f, 30.0f }, FlashLightYS, olc::WHITE, { 2.0f, 2.0f });
     }
     bool DrawGrass() {
         for (int x = 0; x < 1024; x += 32) {
@@ -422,7 +416,7 @@ private:
         srand(time(NULL));
         //Sprites
         Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
-        MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticTest.png");
+        MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticFinal.png");
         MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
         Play = std::make_unique<olc::Sprite>("./Sprites/Play.png");
@@ -437,8 +431,8 @@ private:
         Spiderweb4 = std::make_unique <olc::Sprite>("./Sprites/Brokenweb.png");
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
-        GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRight.png");
-        GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeft.png");
+        GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRightPumpkin.png");
+        GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeftPumpkin.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
         FlashlightDecal = new olc::Decal(Flashlight.get());
