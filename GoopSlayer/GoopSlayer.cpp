@@ -62,7 +62,7 @@ public:
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
     GameStateEnum GameState = MENU;
     //Wave variables
-    int Wave = 1;
+    int Wave = 5;
     float Time = 0;
     float SkillCooldownTimer = 0;
     float CooldownNum = 0;
@@ -72,7 +72,6 @@ public:
     int MaxGoopIncrease = 0;
     int TotalGoops = 3;
     bool GrassDrawn = false;
-
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
@@ -80,11 +79,11 @@ public:
         float FlashlightX = GetMouseX();
         float FlashlightY = GetMouseY();
         DrawDecal({ 0.0f, 0.0f }, MenuBackgroundDecal, { 1.0f, 1.0f });
-        DrawDecal({ FlashlightX - 48, FlashlightY - 48 }, FlashlightDecal, { 3.0f, 3.0f });
-        FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 48 }, olc::BLACK);
-        FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 48, 576 }, olc::BLACK);
-        FillRectDecal({ (float)FlashlightX + 48, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
-        FillRectDecal({ 0.0f, (float)FlashlightY + 48 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
+        DrawDecal({ FlashlightX - 128, FlashlightY - 128 }, FlashlightDecal, { 4.0f, 4.0f });
+        FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 128 }, olc::BLACK);
+        FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 128, 576 }, olc::BLACK);
+        FillRectDecal({ (float)FlashlightX + 128, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
+        FillRectDecal({ 0.0f, (float)FlashlightY + 128 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
     }
     void WaveCheck() {
         if (KilledGoops >= TotalGoops && GoopPos.size() == 0) {
@@ -93,13 +92,6 @@ public:
             WaveDisplay = true;
             Wave++;
             TotalGoops += 2;
-            if (MaxGoops < 4 && MaxGoopIncrease == 3) {
-                MaxGoops++;
-                MaxGoopIncrease = 0;
-            }
-            if (MaxGoopIncrease < 3) {
-                MaxGoopIncrease++;
-            }
         }
     }
     void DisplayWave() {
@@ -108,6 +100,10 @@ public:
         DrawStringDecal({ (float)ScreenWidth() / 2 - 130, (float)ScreenHeight() / 3 }, "Wave", olc::WHITE, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 56, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
+        if (Wave == 6) {
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 14, (float)ScreenHeight() / 2 + 3 }, "Unlocked arrow ring!", olc::BLACK, { 4.0f, 4.0f });
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 10, (float)ScreenHeight() / 2 }, "Unlocked arrow ring!", olc::WHITE, { 4.0f, 4.0f });
+        }
     }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
@@ -350,7 +346,7 @@ public:
         if (ArcherPos.y < -5) {
             ArcherPos.y = -4;
         }
-        if (GetKey(olc::Key::E).bPressed && SkillUsed == false) {
+        if (GetKey(olc::Key::E).bPressed && SkillUsed == false && Wave >= 6) {
             SpawnArrowRing(fElapsedTime);
             SkillUsed = true;
         }
@@ -386,7 +382,7 @@ public:
             //Timers
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
-            float GoopSpeed = 210 * fElapsedTime;
+            float GoopSpeed = 220 * fElapsedTime;
 
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
@@ -405,7 +401,9 @@ public:
                 SpawnGoop();
                 MoveGoop(GoopSpeed, fElapsedTime);
             }
-            DrawSkillUI(fElapsedTime);
+            if (Wave >= 6) {
+                DrawSkillUI(fElapsedTime);
+            }
 
             //Draw webs
             DrawSpiderwebs();
@@ -423,7 +421,7 @@ private:
     bool OnUserCreate() override {
         srand(time(NULL));
         //Sprites
-        Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight.png");
+        Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
         MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticTest.png");
         MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
