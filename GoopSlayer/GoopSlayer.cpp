@@ -8,6 +8,7 @@
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> SkeletonTest;
     std::unique_ptr<olc::Sprite> Flashlight;
     std::unique_ptr<olc::Sprite> MenuBackground;
     std::unique_ptr<olc::Sprite> MenuArrow;
@@ -28,6 +29,7 @@ public:
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
+    olc::Decal* SkeletonTestDecal;
     olc::Decal* FlashlightDecal;
     olc::Decal* MenuBackgroundDecal;
     olc::Decal* MenuArrowDecal;
@@ -50,28 +52,38 @@ public:
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
+    //Skeleton variables
+    std::vector<olc::vf2d> SkeleVel;
+    std::vector<olc::vf2d> SkelePos;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
     olc::vf2d ArcherPos = { 448.0f, 238.0f };
-    int score = 0;
-    bool SkillUsed = false;
     //Menu variables
+    int score = 0;
     int menu = 0;
     enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
     GameStateEnum GameState = MENU;
     //Wave variables
-    int Wave = 5;
+    int Wave = 1;
     float Time = 0;
-    float SkillCooldownTimer = 0;
-    float CooldownNum = 0;
     bool WaveDisplay = true;
+    int MaxSkeletons = 0;
     int KilledGoops = 0;
     int MaxGoops = 1;
     int MaxGoopIncrease = 0;
+    int TotalSkeletons = 0;
     int TotalGoops = 3;
+    int WaveCounter = 0;
+    int SkeleWaveCounter = 0;
+    //Skill variables
+    bool SkillUsed = false;
+    float CooldownNum = 0;
+    float SkillCooldownTimer = 0;
+    //General variables
     bool GrassDrawn = false;
+
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
@@ -92,6 +104,23 @@ public:
             WaveDisplay = true;
             Wave++;
             TotalGoops += 2;
+            WaveCounter++;
+
+            if (Wave >= 5) {
+                if (Wave == 5 && MaxSkeletons == 0) {
+                    TotalSkeletons = 1;
+                    MaxSkeletons++;
+                }
+                SkeleWaveCounter++;
+                TotalSkeletons++;
+                if (SkeleWaveCounter == 4 && MaxSkeletons < 4) {
+                    MaxSkeletons++;
+                }
+            }
+            if (WaveCounter == 4 && MaxGoops < 4) {
+                MaxGoops++;
+                WaveCounter = 0;
+            }
         }
     }
     void DisplayWave() {
@@ -178,6 +207,31 @@ public:
         }
         return GrassDrawn = true;
     }
+    void SpawnSkeleton() {
+        if (SkelePos.size() == 0) {
+            //Goop random coord gen (walls) (spawns max goops)
+            for (int k = 0; k < MaxSkeletons; k++) {
+                int SideSkeleNum = rand() % 4;
+
+                if (SideSkeleNum == 0) {
+                    float SkeleYNum = rand() % 575;
+                    SkelePos.push_back({ 0.f, SkeleYNum });
+                }
+                if (SideSkeleNum == 1) {
+                    float SkeleXNum = rand() % 1023;
+                    SkelePos.push_back({ SkeleXNum, 0 });
+                }
+                if (SideSkeleNum == 2) {
+                    float SkeleXNum = rand() % 1023;
+                    SkelePos.push_back({ SkeleXNum, 575 });
+                }
+                if (SideSkeleNum == 3) {
+                    float SkeleYNum = rand() % 575;
+                    SkelePos.push_back({ 1023, SkeleYNum });
+                }
+            }
+        }
+    }
     void SpawnGoop() {
         if (GoopPos.size() == 0) {
             //Goop random coord gen (walls) (spawns max goops)
@@ -214,6 +268,21 @@ public:
             Goop.y < Archer.y + ArcherSize.y &&
             Goop.y + GoopSize.y > Archer.y) {
             GameState = DEAD;
+        }
+    }
+    void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
+        for (int k = 0; k < SkelePos.size(); k++) {
+            if (SkelePos[k].x > ArcherPos.x + 200
+                && SkelePos[k].x < ArcherPos.x - 200
+                && SkelePos[k].y > ArcherPos.y + 200
+                && SkelePos[k].y < ArcherPos.y - 200) {
+                // Calculate direction towards the player
+                olc::vf2d dir = (ArcherPos - SkelePos[k]).norm();
+                // Calculate the new position based on direction and speed
+                SkelePos[k] += dir * SkeletonSpeed;
+            }
+            // Draw the Goop
+            DrawDecal({ GoopPos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
@@ -377,6 +446,7 @@ public:
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 220 * fElapsedTime;
+            float SkeletonSpeed = 210 * fElapsedTime;
 
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
@@ -391,9 +461,11 @@ public:
                 Time = 0.0f;
             }
             if (Time >= 1.0f && WaveDisplay == false) {
-                //SpawnGoop
+                //Spawn Enemies
                 SpawnGoop();
+                SpawnSkeleton();
                 MoveGoop(GoopSpeed, fElapsedTime);
+                MoveSkeleton(SkeletonSpeed, fElapsedTime);
             }
             if (Wave >= 6) {
                 DrawSkillUI(fElapsedTime);
@@ -415,6 +487,7 @@ private:
     bool OnUserCreate() override {
         srand(time(NULL));
         //Sprites
+        SkeletonTest = std::make_unique<olc::Sprite>("./Sprites/SkeletonTest.png");
         Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
         MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticFinal.png");
         MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
@@ -435,6 +508,7 @@ private:
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeftPumpkin.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         //Decals
+        SkeletonTestDecal = new olc::Decal(SkeletonTest.get());
         FlashlightDecal = new olc::Decal(Flashlight.get());
         MenuBackgroundDecal = new olc::Decal(MenuBackground.get());
         MenuArrowDecal = new olc::Decal(MenuArrow.get());
