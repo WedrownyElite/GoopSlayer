@@ -27,6 +27,7 @@ public:
     std::unique_ptr<olc::Sprite> GoopLeft;
     std::unique_ptr<olc::Sprite> Grass;
     std::unique_ptr<olc::Sprite> ArcherRight;
+    std::unique_ptr<olc::Sprite> PumpkinArrow;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
     olc::Decal* SkeletonTestDecal;
@@ -48,6 +49,7 @@ public:
     olc::Decal* GoopRightDecal;
     olc::Decal* GoopLeftDecal;
     olc::Decal* ArcherRightDecal;
+    olc::Decal* PumpkinArrowDecal;
     olc::Decal* ArrowDecal;
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
@@ -59,10 +61,15 @@ public:
     //Skeleton variables
     std::vector<olc::vf2d> SkeleVel;
     std::vector<olc::vf2d> SkelePos;
-    int TotalSkeletons = 1;
+    int TotalSkeletons = 2;
     int MaxSkeletons = 1;
     int KilledSkeles = 0;
     int SkeleWaveCounter = 0;
+    //Skeleton arrow variables
+    std::vector<olc::vf2d> SkeleArrowPos;
+    std::vector<olc::vf2d> SkeleArrowVel;
+    std::vector<int> SkeleShoot;
+    std::vector<float> SkeleShootTimer;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
@@ -207,7 +214,7 @@ public:
 
         DrawSpiderwebs();
         DrawDecal({ (float)ScreenWidth() / 4 + 60, (float)ScreenHeight() / 10 - 83 }, SpookyLogoDecal, { 3.0f, 3.0f });
-        DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, ArrowDecal, { 4.0f, 4.0f });
+        DrawDecal({ (float)ScreenWidth() - 250, (float)ScreenHeight() / 3 - 30 }, PumpkinArrowDecal, { 4.0f, 4.0f });
         DrawDecal({ (float)ScreenWidth() / 8 - 10, (float)ScreenHeight() / 3 - 30 }, GoopRightDecal, { 3.0f, 3.0f });
         DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
         DrawDecal({ play_XCoord, play_YCoord }, PlayDecal, scale * play_zoom);
@@ -239,7 +246,7 @@ public:
         return GrassDrawn = true;
     }
     void SpawnSkeleton() {
-        if (SkelePos.size() == 0) {
+        if (SkelePos.size() == 0 && TotalSkeletons > 0) {
             //Goop random coord gen (walls) (spawns max goops)
             for (int k = 0; k < MaxSkeletons; k++) {
                 int SideSkeleNum = rand() % 4;
@@ -302,22 +309,59 @@ public:
         }
     }
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
-        for (int k = 0; k < SkelePos.size(); k++) {
-            if (SkelePos[k].x > ArcherPos.x + 200
-                && SkelePos[k].x < ArcherPos.x - 200
-                && SkelePos[k].y > ArcherPos.y + 200
-                && SkelePos[k].y < ArcherPos.y - 200) {
+        if (SkelePos.size() > 0) {
+            //Iterates through all Skeletons
+            for (int k = 0; k < SkelePos.size(); k++) {
+                SkeleShoot.push_back(0);
                 // Calculate direction towards the player
-                olc::vf2d dir = (ArcherPos - SkelePos[k]).norm();
-                // Calculate the new position based on direction and speed
-                SkelePos[k] += dir * SkeletonSpeed;
+                olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[k]);
+                float distance = dir.mag();
+                //If Skeleton is outside 200 pixel range of user (add 5f to stop vibrating)
+                if (distance > 205.0f) {
+                    //Calc new position
+                    SkelePos[k] += dir.norm() * SkeletonSpeed;
+                    SkeleShoot[k] = 0;
+                }
+                //If within 200 pixel range of user (remove 5f to stop vibrating)
+                else if (distance <= 195.0f && distance > 5.0f) {
+                    //Calc new position
+                    SkelePos[k] -= dir.norm() * SkeletonSpeed;
+                    SkeleShoot[k] = 1;
+                }
                 // Draw the Skeleton
                 DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
+            }
+        }
+    }
+    void DrawSkeleArrow(float fElapsedTime) {
+        for (size_t i = 0; i < SkeleArrowPos.size(); i++) {
+            SkeleArrowPos[i] += SkeleArrowVel[i] * fElapsedTime;
+
+            //Arrow off-screen
+            if (SkeleArrowPos[i].x < 0 || SkeleArrowPos[i].x >= ScreenWidth() || SkeleArrowPos[i].y < 0 || SkeleArrowPos[i].y >= ScreenHeight()) {
+                SkeleArrowPos.erase(SkeleArrowPos.begin() + i);
+                SkeleArrowVel.erase(SkeleArrowVel.begin() + i);
+                i--;
             }
             else {
-                // Draw the Skeleton
-                DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
+                //Angle of roation
+                float angle = atan2f(SkeleArrowVel[i].y, SkeleArrowVel[i].x);
+                //Draw arrow
+                DrawRotatedDecal(SkeleArrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
             }
+        }
+    }
+    void SkeletonShoot(float fElapsedTime) {
+        for (int k = 0; SkelePos.size() > 0; k++) {
+            if (SkeleShoot[k] == true && SkeleShootTimer[k] >= 1.5f) {
+                // Calculate velocity towards the target
+                olc::vf2d vel = (ArcherPos - olc::vf2d(SkelePos[k])).norm() * 500.0f;
+
+                // Store the arrow's position and velocity
+                SkeleArrowPos.push_back(SkelePos[k]);
+                SkeleArrowVel.push_back(vel);
+            }
+            DrawSkeleArrow(fElapsedTime);
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
@@ -380,7 +424,7 @@ public:
                 float angle = atan2f(arrowVel[i].y, arrowVel[i].x);
 
                 // Draw the rotated arrow
-                DrawRotatedDecal(arrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+                DrawRotatedDecal(arrowPos[i], PumpkinArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
 
                 //Arrow+Goop Check
                 ArrowGoopCheck();
@@ -481,7 +525,7 @@ public:
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 220 * fElapsedTime;
-            float SkeletonSpeed = 210 * fElapsedTime;
+            float SkeletonSpeed = 240 * fElapsedTime;
 
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
@@ -501,6 +545,7 @@ public:
                 SpawnSkeleton();
                 MoveGoop(GoopSpeed, fElapsedTime);
                 MoveSkeleton(SkeletonSpeed, fElapsedTime);
+                SkeletonShoot(fElapsedTime);
             }
             if (Wave >= 6) {
                 DrawSkillUI(fElapsedTime);
@@ -515,10 +560,15 @@ public:
             //Draw Grass
             GrassDrawn = DrawGrass();
             //Timers
+            for (int k = 0; k < SkelePos.size(); k++) {
+                if (SkeleShoot[k] == 1) {
+                    SkeleShootTimer[k] += fElapsedTime;
+                }
+            }
             Time += fElapsedTime;
             float ArcherSpeed = 200 * fElapsedTime;
             float GoopSpeed = 220 * fElapsedTime;
-            float SkeletonSpeed = 210 * fElapsedTime;
+            float SkeletonSpeed = 240 * fElapsedTime;
 
             //Draw Archer
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
@@ -562,7 +612,6 @@ private:
         SkeletonTest = std::make_unique<olc::Sprite>("./Sprites/SkeletonTest.png");
         Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
         MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticFinal.png");
-        MenuArrow = std::make_unique<olc::Sprite>("./Sprites/MenuArrow.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
         Play = std::make_unique<olc::Sprite>("./Sprites/Play.png");
         Cooldown = std::make_unique<olc::Sprite>("./Sprites/Cooldown.png");
@@ -578,7 +627,8 @@ private:
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRightPumpkin.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeftPumpkin.png");
-        Arrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
+        PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
+        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
         SkeletonTestDecal = new olc::Decal(SkeletonTest.get());
         FlashlightDecal = new olc::Decal(Flashlight.get());
@@ -599,6 +649,7 @@ private:
         GoopRightDecal = new olc::Decal(GoopRight.get());
         GoopLeftDecal = new olc::Decal(GoopLeft.get());
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
+        PumpkinArrowDecal = new olc::Decal(PumpkinArrow.get());
         ArrowDecal = new olc::Decal(Arrow.get());
         return true;
     }
