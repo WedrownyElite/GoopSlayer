@@ -52,9 +52,17 @@ public:
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
+    int TotalGoops = 3;
+    int MaxGoops = 1;
+    int KilledGoops = 0;
+    int MaxGoopIncrease = 0;
     //Skeleton variables
     std::vector<olc::vf2d> SkeleVel;
     std::vector<olc::vf2d> SkelePos;
+    int TotalSkeletons = 1;
+    int MaxSkeletons = 1;
+    int KilledSkeles = 0;
+    int SkeleWaveCounter = 0;
     //Arrow variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
@@ -63,20 +71,13 @@ public:
     //Menu variables
     int score = 0;
     int menu = 0;
-    enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT };
+    enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT, DEBUG};
     GameStateEnum GameState = MENU;
     //Wave variables
     int Wave = 1;
     float Time = 0;
     bool WaveDisplay = true;
-    int MaxSkeletons = 0;
-    int KilledGoops = 0;
-    int MaxGoops = 1;
-    int MaxGoopIncrease = 0;
-    int TotalSkeletons = 0;
-    int TotalGoops = 3;
     int WaveCounter = 0;
-    int SkeleWaveCounter = 0;
     //Skill variables
     bool SkillUsed = false;
     float CooldownNum = 0;
@@ -96,6 +97,26 @@ public:
         FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 128, 576 }, olc::BLACK);
         FillRectDecal({ (float)FlashlightX + 128, 0.0f }, { (float)ScreenWidth() - (float)FlashlightX + 32, 576.0f }, olc::BLACK);
         FillRectDecal({ 0.0f, (float)FlashlightY + 128 }, { 1024.0f, (float)ScreenHeight() - (float)FlashlightY + 32 }, olc::BLACK);
+    }
+    void WaveCheckDebug() {
+        if ((KilledGoops >= TotalGoops && GoopPos.size() == 0) && (KilledSkeles >= TotalSkeletons && SkelePos.size() == 0)) {
+            KilledGoops = 0;
+            Time = 0.0f;
+            WaveDisplay = true;
+            Wave++;
+            TotalGoops += 2;
+            WaveCounter++;
+
+            SkeleWaveCounter++;
+            TotalSkeletons++;
+            if (SkeleWaveCounter == 4 && MaxSkeletons < 4) {
+                MaxSkeletons++;
+            }
+        }
+        if (WaveCounter == 4 && MaxGoops < 4) {
+            MaxGoops++;
+            WaveCounter = 0;
+        }
     }
     void WaveCheck() {
         if (KilledGoops >= TotalGoops && GoopPos.size() == 0) {
@@ -191,12 +212,22 @@ public:
         DrawDecal({ (float)ScreenWidth() / 4 - 10, (float)ScreenHeight() / 4 }, GoopSlayerLogoDecal, { 2.0f, 2.0f });
         DrawDecal({ play_XCoord, play_YCoord }, PlayDecal, scale * play_zoom);
         DrawDecal({ quit_XCoord, quit_YCoord }, QuitDecal, scale * quit_zoom);
+
+        int MouseCoordX = GetMouseX();
+        int MouseCoordY = GetMouseY();
+        std::string MouseCoordXS = std::to_string(MouseCoordX);
+        std::string MouseCoordYS = std::to_string(MouseCoordY);
+        DrawStringDecal({ 5.0f, 5.0f }, MouseCoordXS, olc::WHITE, { 2.0f, 2.0f });
+        DrawStringDecal({ 5.0f, 20.0f }, MouseCoordYS, olc::WHITE, { 2.0f, 2.0f });
         if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365 && (GetMouse(0).bPressed)) {
             GameState = GAME;
         }
         if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460 && (GetMouse(0).bPressed)) {
             WaveDisplay = false;
             GameState = QUIT;
+        }
+        if (GetMouseX() >= 200 && GetMouseY() >= 105 && GetMouseX() <= 240 && GetMouseY() <= 130 && (GetMouse(0).bPressed)) {
+            GameState = DEBUG;
         }
     }
     bool DrawGrass() {
@@ -280,9 +311,13 @@ public:
                 olc::vf2d dir = (ArcherPos - SkelePos[k]).norm();
                 // Calculate the new position based on direction and speed
                 SkelePos[k] += dir * SkeletonSpeed;
+                // Draw the Skeleton
+                DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
             }
-            // Draw the Goop
-            DrawDecal({ GoopPos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
+            else {
+                // Draw the Skeleton
+                DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
+            }
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
@@ -456,6 +491,43 @@ public:
             UserInput(ArcherSpeed, fElapsedTime);
             ShootArrow(fElapsedTime);
             WaveCheck();
+            if (Time >= 5.0f && WaveDisplay == true) {
+                WaveDisplay = false;
+                Time = 0.0f;
+            }
+            if (Time >= 1.0f && WaveDisplay == false) {
+                //Spawn Enemies
+                SpawnGoop();
+                SpawnSkeleton();
+                MoveGoop(GoopSpeed, fElapsedTime);
+                MoveSkeleton(SkeletonSpeed, fElapsedTime);
+            }
+            if (Wave >= 6) {
+                DrawSkillUI(fElapsedTime);
+            }
+
+            //Draw webs
+            DrawSpiderwebs();
+            return true;
+        }
+        if (GameState == DEBUG) {
+            Clear(olc::BLACK);
+            //Draw Grass
+            GrassDrawn = DrawGrass();
+            //Timers
+            Time += fElapsedTime;
+            float ArcherSpeed = 200 * fElapsedTime;
+            float GoopSpeed = 220 * fElapsedTime;
+            float SkeletonSpeed = 210 * fElapsedTime;
+
+            //Draw Archer
+            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+            if (Time <= 5.0f && WaveDisplay == true) {
+                DisplayWave();
+            }
+            UserInput(ArcherSpeed, fElapsedTime);
+            ShootArrow(fElapsedTime);
+            WaveCheckDebug();
             if (Time >= 5.0f && WaveDisplay == true) {
                 WaveDisplay = false;
                 Time = 0.0f;
