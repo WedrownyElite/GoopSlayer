@@ -171,6 +171,15 @@ public:
                 arrowPos.erase(arrowPos.begin() + k);
                 arrowVel.erase(arrowVel.begin() + k);
             }
+            for (int k = 0; k < SkelePos.size(); k++) {
+                SkelePos.erase(SkelePos.begin() + k);
+                SkeleShoot.erase(SkeleShoot.begin() + k);
+                SkeleShootTimer.erase(SkeleShootTimer.begin() + k);
+            }
+            for (int k = 0; k < SkeleArrowPos.size(); k++) {
+                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
+                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
+            }
             ArcherPos.x = 448.0f;
             ArcherPos.y = 238.0f;
             score = 0;
@@ -178,6 +187,8 @@ public:
             Wave = 1;
             Time = 0;
             KilledGoops = 0;
+            KilledSkeles = 0;
+            TotalSkeletons = 2;
             TotalGoops = 3;
             WaveDisplay = true;
             SkillCooldownTimer = 0;
@@ -246,8 +257,8 @@ public:
         return GrassDrawn = true;
     }
     void SpawnSkeleton() {
-        if (SkelePos.size() == 0 && TotalSkeletons > 0) {
-            //Goop random coord gen (walls) (spawns max goops)
+        if (SkelePos.size() == 0) {
+            //Goop random coord gen (walls) (spawns max skeletons)
             for (int k = 0; k < MaxSkeletons; k++) {
                 int SideSkeleNum = rand() % 4;
 
@@ -267,6 +278,8 @@ public:
                     float SkeleYNum = rand() % 575;
                     SkelePos.push_back({ 1023, SkeleYNum });
                 }
+                SkeleShoot.push_back(1);
+                SkeleShootTimer.push_back(0);
             }
         }
     }
@@ -295,42 +308,55 @@ public:
             }
         }
     }
-    void PlayerGoopCheck() {
-        olc::vi2d Goop(GoopPos[0]);
-        olc::vi2d GoopSize(64, 64);
+    void PlayerDeadCheck() {
+        //Archer variables
         olc::vi2d Archer(ArcherPos);
         olc::vi2d ArcherSize(64, 64);
+        //Goop check
+        for (int k = 0; k < GoopPos.size(); k++) {
+            //Goop variables
+            olc::vi2d Goop(GoopPos[k]);
+            olc::vi2d GoopSize(64, 64);
 
-        if (Goop.x < ArcherPos.x + ArcherSize.x &&
-            Goop.x + GoopSize.x > Archer.x &&
-            Goop.y < Archer.y + ArcherSize.y &&
-            Goop.y + GoopSize.y > Archer.y) {
-            GameState = DEAD;
+            if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                Goop.x + GoopSize.x > Archer.x &&
+                Goop.y < Archer.y + ArcherSize.y &&
+                Goop.y + GoopSize.y > Archer.y) {
+                GameState = DEAD;
+            }
+        }
+        //Check if skeleton arrow hits player
+        for (int k = 0; k < SkeleArrowPos.size(); k++) {
+            //Skele variables
+            olc::vi2d SkeleArrow(SkeleArrowPos[k]);
+            olc::vi2d SkeleArrowSize(32, 32);
+
+            if (SkeleArrow.x < ArcherPos.x + ArcherSize.x &&
+                SkeleArrow.x + SkeleArrowSize.x > Archer.x &&
+                SkeleArrow.y < Archer.y + ArcherSize.y &&
+                SkeleArrow.y + SkeleArrowSize.y > Archer.y) {
+                GameState = DEAD;
+            }
         }
     }
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
-        if (SkelePos.size() > 0) {
-            //Iterates through all Skeletons
-            for (int k = 0; k < SkelePos.size(); k++) {
-                SkeleShoot.push_back(0);
-                // Calculate direction towards the player
-                olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[k]);
-                float distance = dir.mag();
-                //If Skeleton is outside 200 pixel range of user (add 5f to stop vibrating)
-                if (distance > 205.0f) {
-                    //Calc new position
-                    SkelePos[k] += dir.norm() * SkeletonSpeed;
-                    SkeleShoot[k] = 0;
-                }
-                //If within 200 pixel range of user (remove 5f to stop vibrating)
-                else if (distance <= 195.0f && distance > 5.0f) {
-                    //Calc new position
-                    SkelePos[k] -= dir.norm() * SkeletonSpeed;
-                    SkeleShoot[k] = 1;
-                }
-                // Draw the Skeleton
-                DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
+        //Iterates through all Skeletons
+        for (int k = 0; k < SkelePos.size(); k++) {
+            // Calculate direction towards the player
+            olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[k]);
+            float distance = dir.mag();
+            //If Skeleton is outside 200 pixel range of user (add 5f to stop vibrating)
+            if (distance > 205.0f) {
+                //Calc new position
+                SkelePos[k] += dir.norm() * SkeletonSpeed;
             }
+            //If within 200 pixel range of user (remove 5f to stop vibrating)
+            else if (distance <= 195.0f && distance > 5.0f) {
+                //Calc new position
+                SkelePos[k] -= dir.norm() * SkeletonSpeed;
+            }
+            // Draw the Skeleton
+            DrawDecal({ SkelePos[k] }, SkeletonTestDecal, { 2.0f, 2.0f });
         }
     }
     void DrawSkeleArrow(float fElapsedTime) {
@@ -352,14 +378,16 @@ public:
         }
     }
     void SkeletonShoot(float fElapsedTime) {
-        for (int k = 0; SkelePos.size() > 0; k++) {
+        for (int k = 0; k < SkelePos.size(); k++) {
             if (SkeleShoot[k] == true && SkeleShootTimer[k] >= 1.5f) {
+                olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
                 // Calculate velocity towards the target
-                olc::vf2d vel = (ArcherPos - olc::vf2d(SkelePos[k])).norm() * 500.0f;
+                olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(SkelePos[k])).norm() * 500.0f;
 
                 // Store the arrow's position and velocity
-                SkeleArrowPos.push_back(SkelePos[k]);
+                SkeleArrowPos.push_back({ SkelePos[k].x + 32, SkelePos[k].y + 32});
                 SkeleArrowVel.push_back(vel);
+                SkeleShootTimer[k] = 0;
             }
             DrawSkeleArrow(fElapsedTime);
         }
@@ -382,14 +410,14 @@ public:
         }
 
         // Player+Goop Check
-        PlayerGoopCheck();
+        PlayerDeadCheck();
     }
-    void ArrowGoopCheck() {
-        //Check if arrow hits goop
+    void ArrowEnemyCheck() {
+        //Iterates through all arrows
         for (int k = 0; k < arrowPos.size(); k++) {
             olc::vi2d Arrow(arrowPos[k]);
             olc::vi2d ArrowSize(30, 30);
-
+            //Checks if arrows hit any goops
             for (int o = 0; o < GoopPos.size(); o++) {
                 olc::vi2d Goop(GoopPos[o]);
                 olc::vi2d GoopSize(63, 63);
@@ -403,6 +431,24 @@ public:
                     GoopPos.erase(GoopPos.begin() + o);
                     score++;
                     KilledGoops++;
+                }
+            }
+            //Checks if arrows hit any skeletons
+            for (int o = 0; o < SkelePos.size(); o++) {
+                olc::vi2d Skeleton(SkelePos[o]);
+                olc::vi2d SkeleSize(63, 63);
+
+                if (Arrow.x < Skeleton.x + SkeleSize.y &&
+                    Arrow.x + ArrowSize.x > Skeleton.x &&
+                    Arrow.y < Skeleton.y + SkeleSize.y &&
+                    Arrow.y + ArrowSize.y > Skeleton.y) {
+                    arrowPos.erase(arrowPos.begin() + k);
+                    arrowVel.erase(arrowVel.begin() + k);
+                    SkelePos.erase(SkelePos.begin() + o);
+                    SkeleShoot.erase(SkeleShoot.begin() + o);
+                    SkeleShootTimer.erase(SkeleShootTimer.begin() + o);
+                    score++;
+                    KilledSkeles++;
                 }
             }
         }
@@ -427,7 +473,7 @@ public:
                 DrawRotatedDecal(arrowPos[i], PumpkinArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
 
                 //Arrow+Goop Check
-                ArrowGoopCheck();
+                ArrowEnemyCheck();
             }
         }
     }
@@ -442,7 +488,7 @@ public:
 
 
             // Store the arrow's position and velocity
-            arrowPos.push_back({ ArcherPos.x + 15, ArcherPos.y + 15 });
+            arrowPos.push_back({ ArcherPos.x + 32, ArcherPos.y + 32 });
             arrowVel.push_back(vel);
         }
         DrawArrow(fElapsedTime);
@@ -508,6 +554,84 @@ public:
             SkillUsed = false;
         }
     }
+    void GameGameState(float fElapsedTime) {
+        Clear(olc::BLACK);
+        //Draw Grass
+        GrassDrawn = DrawGrass();
+        //Timers
+        Time += fElapsedTime;
+        float ArcherSpeed = 200 * fElapsedTime;
+        float GoopSpeed = 220 * fElapsedTime;
+        float SkeletonSpeed = 240 * fElapsedTime;
+
+        //Draw Archer
+        DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        if (Time <= 5.0f && WaveDisplay == true) {
+            DisplayWave();
+        }
+        UserInput(ArcherSpeed, fElapsedTime);
+        ShootArrow(fElapsedTime);
+        WaveCheck();
+        if (Time >= 5.0f && WaveDisplay == true) {
+            WaveDisplay = false;
+            Time = 0.0f;
+        }
+        if (Time >= 1.0f && WaveDisplay == false) {
+            //Spawn Enemies
+            SpawnGoop();
+            SpawnSkeleton();
+            MoveGoop(GoopSpeed, fElapsedTime);
+            MoveSkeleton(SkeletonSpeed, fElapsedTime);
+        }
+        if (Wave >= 6) {
+            DrawSkillUI(fElapsedTime);
+        }
+
+        //Draw webs
+        DrawSpiderwebs();
+    }
+    void DebugGameState(float fElapsedTime) {
+        Clear(olc::BLACK);
+        //Draw Grass
+        GrassDrawn = DrawGrass();
+        //Timers
+        for (int k = 0; k < SkelePos.size(); k++) {
+            if (SkeleShoot[k] == 1) {
+                SkeleShootTimer[k] += fElapsedTime;
+            }
+        }
+        Time += fElapsedTime;
+        float ArcherSpeed = 200 * fElapsedTime;
+        float GoopSpeed = 220 * fElapsedTime;
+        float SkeletonSpeed = 240 * fElapsedTime;
+
+        //Draw Archer
+        DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        if (Time <= 5.0f && WaveDisplay == true) {
+            DisplayWave();
+        }
+        UserInput(ArcherSpeed, fElapsedTime);
+        ShootArrow(fElapsedTime);
+        WaveCheckDebug();
+        if (Time >= 5.0f && WaveDisplay == true) {
+            WaveDisplay = false;
+            Time = 0.0f;
+        }
+        if (Time >= 1.0f && WaveDisplay == false) {
+            //Spawn Enemies
+            SpawnGoop();
+            SpawnSkeleton();
+            MoveGoop(GoopSpeed, fElapsedTime);
+            MoveSkeleton(SkeletonSpeed, fElapsedTime);
+            SkeletonShoot(fElapsedTime);
+        }
+        if (Wave >= 6) {
+            DrawSkillUI(fElapsedTime);
+        }
+
+        //Draw webs
+        DrawSpiderwebs();
+    }
     bool OnUserUpdate(float fElapsedTime) override {
         if (GameState == MENU) {
             MenuFlashlight();
@@ -518,83 +642,11 @@ public:
             return false;
         }
         if (GameState == GAME) {
-            Clear(olc::BLACK);
-            //Draw Grass
-            GrassDrawn = DrawGrass();
-            //Timers
-            Time += fElapsedTime;
-            float ArcherSpeed = 200 * fElapsedTime;
-            float GoopSpeed = 220 * fElapsedTime;
-            float SkeletonSpeed = 240 * fElapsedTime;
-
-            //Draw Archer
-            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
-            if (Time <= 5.0f && WaveDisplay == true) {
-                DisplayWave();
-            }
-            UserInput(ArcherSpeed, fElapsedTime);
-            ShootArrow(fElapsedTime);
-            WaveCheck();
-            if (Time >= 5.0f && WaveDisplay == true) {
-                WaveDisplay = false;
-                Time = 0.0f;
-            }
-            if (Time >= 1.0f && WaveDisplay == false) {
-                //Spawn Enemies
-                SpawnGoop();
-                SpawnSkeleton();
-                MoveGoop(GoopSpeed, fElapsedTime);
-                MoveSkeleton(SkeletonSpeed, fElapsedTime);
-                SkeletonShoot(fElapsedTime);
-            }
-            if (Wave >= 6) {
-                DrawSkillUI(fElapsedTime);
-            }
-
-            //Draw webs
-            DrawSpiderwebs();
+            GameGameState(fElapsedTime);
             return true;
         }
         if (GameState == DEBUG) {
-            Clear(olc::BLACK);
-            //Draw Grass
-            GrassDrawn = DrawGrass();
-            //Timers
-            for (int k = 0; k < SkelePos.size(); k++) {
-                if (SkeleShoot[k] == 1) {
-                    SkeleShootTimer[k] += fElapsedTime;
-                }
-            }
-            Time += fElapsedTime;
-            float ArcherSpeed = 200 * fElapsedTime;
-            float GoopSpeed = 220 * fElapsedTime;
-            float SkeletonSpeed = 240 * fElapsedTime;
-
-            //Draw Archer
-            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
-            if (Time <= 5.0f && WaveDisplay == true) {
-                DisplayWave();
-            }
-            UserInput(ArcherSpeed, fElapsedTime);
-            ShootArrow(fElapsedTime);
-            WaveCheckDebug();
-            if (Time >= 5.0f && WaveDisplay == true) {
-                WaveDisplay = false;
-                Time = 0.0f;
-            }
-            if (Time >= 1.0f && WaveDisplay == false) {
-                //Spawn Enemies
-                SpawnGoop();
-                SpawnSkeleton();
-                MoveGoop(GoopSpeed, fElapsedTime);
-                MoveSkeleton(SkeletonSpeed, fElapsedTime);
-            }
-            if (Wave >= 6) {
-                DrawSkillUI(fElapsedTime);
-            }
-
-            //Draw webs
-            DrawSpiderwebs();
+            DebugGameState(fElapsedTime);
             return true;
         }
         if (GameState == DEAD) {
