@@ -123,6 +123,7 @@ public:
     void WaveCheck() {
         if (KilledGoops >= TotalEnemies[0] && KilledSkeles >= TotalEnemies[1]) {
             KilledGoops = 0;
+            KilledSkeles = 0;
             Time = 0.0f;
             //Remove any skeleton arrows when wave ends
             for (int k = 0; k < SkeleArrowPos.size(); k++) {
@@ -130,8 +131,12 @@ public:
                 SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
             }
             WaveDisplay = true;
+            WaveCounter[0]++;
+            WaveCounter[1]++;
             Wave++;
-            TotalEnemies[0] += 2;
+            if (TotalEnemies[0] < 16) {
+                TotalEnemies[0] += 2;
+            }
         }
         if (WaveCounter[0] == 4 && MaxEnemies[0] < 4) {
             TotalEnemies[0]++;
