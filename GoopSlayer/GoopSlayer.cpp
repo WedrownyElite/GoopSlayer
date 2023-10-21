@@ -126,18 +126,42 @@ public:
             KilledSkeles = 0;
             Time = 0.0f;
             //Remove any skeleton arrows when wave ends
-            for (int k = 0; k < SkeleArrowPos.size(); k++) {
-                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-            }
+            //for (int k = 0; k < SkeleArrowPos.size(); k++) {
+            //    SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
+            //    SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
+            //}
             WaveDisplay = true;
             WaveCounter[0]++;
             WaveCounter[1]++;
             Wave++;
-            if (TotalEnemies[0] < 16) {
+            //Goop
+            //Increase total by 2 every wave until Total == 16
+            if (TotalEnemies[0] < 4) {
                 TotalEnemies[0] += 2;
             }
+            //Skeletons
+            //Increase max by one every 2 waves until Max ==  4
+            //Increase total by 1 every wave until Total == 14
+            //Starting on Wave 5
+            if (Wave >= 3) {
+                if (MaxEnemies[1] < 4) {
+                    WaveCounter[1]++;
+                }
+                if (TotalEnemies[1] < 14) {
+                    TotalEnemies[1]++;
+                }
+                if (TotalEnemies[1] == 1) {
+                    TotalEnemies[2]++;
+                    MaxEnemies[1]++;
+                }
+                if (WaveCounter[1] == 2) {
+                    MaxEnemies[1]++;
+                    WaveCounter[1] == 0;
+                }
+            }
         }
+        //Goops
+        //Increase max by one every 4 waves until Max == 4
         if (WaveCounter[0] == 4 && MaxEnemies[0] < 4) {
             TotalEnemies[0]++;
             WaveCounter[0] = 0;
@@ -231,6 +255,12 @@ public:
         DrawStringDecal({ 5.0f, 5.0f }, MouseCoordXS, olc::WHITE, { 2.0f, 2.0f });
         DrawStringDecal({ 5.0f, 20.0f }, MouseCoordYS, olc::WHITE, { 2.0f, 2.0f });
         if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365 && (GetMouse(0).bPressed)) {
+            TotalEnemies.push_back(3);
+            TotalEnemies.push_back(0);
+            MaxEnemies.push_back(1);
+            MaxEnemies.push_back(0);
+            WaveCounter.push_back(0);
+            WaveCounter.push_back(0);
             GameState = GAME;
         }
         if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460 && (GetMouse(0).bPressed)) {
@@ -578,6 +608,7 @@ public:
             SpawnSkeleton();
             MoveGoop(GoopSpeed, fElapsedTime);
             MoveSkeleton(SkeletonSpeed, fElapsedTime);
+            SkeletonShoot(fElapsedTime);
         }
         if (Wave >= 6) {
             DrawSkillUI(fElapsedTime);
@@ -656,12 +687,6 @@ public:
 private:
     bool OnUserCreate() override {
         srand(time(NULL));
-        TotalEnemies.push_back(3);
-        TotalEnemies.push_back(0);
-        MaxEnemies.push_back(1);
-        MaxEnemies.push_back(0);
-        WaveCounter.push_back(0);
-        WaveCounter.push_back(0);
         //Sprites
         SkeletonTest = std::make_unique<olc::Sprite>("./Sprites/SkeletonTest.png");
         Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
