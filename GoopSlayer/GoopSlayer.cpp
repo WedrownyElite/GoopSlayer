@@ -155,7 +155,7 @@ public:
                     TotalEnemies[1]++;
                 }
                 if (TotalEnemies[1] == 1) {
-                    TotalEnemies[2]++;
+                    TotalEnemies[1]++;
                     MaxEnemies[1]++;
                 }
                 if (WaveCounter[1] == 2) {
