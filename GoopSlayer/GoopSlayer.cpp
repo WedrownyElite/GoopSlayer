@@ -130,10 +130,10 @@ public:
             KilledSkeles = 0;
             Time = 0.0f;
             //Remove any skeleton arrows when wave ends
-            //for (int k = 0; k < SkeleArrowPos.size(); k++) {
-            //    SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-            //    SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-            //}
+            for (int k = 0; k < SkeleArrowPos.size(); k++) {
+                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
+                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
+            }
             WaveDisplay = true;
             WaveCounter[0]++;
             WaveCounter[1]++;
@@ -160,7 +160,7 @@ public:
                 }
                 if (WaveCounter[1] == 2) {
                     MaxEnemies[1]++;
-                    WaveCounter[1] == 0;
+                    WaveCounter[1] = 0;
                 }
             }
         }
@@ -337,31 +337,31 @@ public:
         olc::vi2d Archer(ArcherPos);
         olc::vi2d ArcherSize(60, 60);
         //Goop check
-        //for (int k = 0; k < GoopPos.size(); k++) {
+        for (int k = 0; k < GoopPos.size(); k++) {
             //Goop variables
-            //olc::vi2d Goop(GoopPos[k]);
-            //olc::vi2d GoopSize(64, 64);
+            olc::vi2d Goop(GoopPos[k]);
+            olc::vi2d GoopSize(64, 64);
 
-            //if (Goop.x < ArcherPos.x + ArcherSize.x &&
-                //Goop.x + GoopSize.x > Archer.x &&
-                //Goop.y < Archer.y + ArcherSize.y &&
-                //Goop.y + GoopSize.y > Archer.y) {
-                //GameState = DEAD;
-            //}
-        //}
+            if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                Goop.x + GoopSize.x > Archer.x &&
+                Goop.y < Archer.y + ArcherSize.y &&
+                Goop.y + GoopSize.y > Archer.y) {
+                GameState = DEAD;
+            }
+        }
         //Check if skeleton arrow hits player
-        //for (int k = 0; k < SkeleArrowPos.size(); k++) {
+        for (int k = 0; k < SkeleArrowPos.size(); k++) {
             //Skele variables
-           // olc::vi2d SkeleArrow(SkeleArrowPos[k]);
-            //olc::vi2d SkeleArrowSize(32, 32);
+            olc::vi2d SkeleArrow(SkeleArrowPos[k]);
+            olc::vi2d SkeleArrowSize(32, 32);
 
-            //if (SkeleArrow.x < ArcherPos.x + ArcherSize.x &&
-            //    SkeleArrow.x + SkeleArrowSize.x > Archer.x &&
-            //    SkeleArrow.y < Archer.y + ArcherSize.y &&
-            //    SkeleArrow.y + SkeleArrowSize.y > Archer.y) {
-            //    GameState = DEAD;
-            //}
-        //}
+            if (SkeleArrow.x < ArcherPos.x + ArcherSize.x &&
+                SkeleArrow.x + SkeleArrowSize.x > Archer.x &&
+               SkeleArrow.y < Archer.y + ArcherSize.y &&
+                SkeleArrow.y + SkeleArrowSize.y > Archer.y) {
+                GameState = DEAD;
+            }
+        }
     }
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
         //Iterates through all Skeletons
@@ -425,7 +425,7 @@ public:
             olc::vf2d dir = (ArcherPos - GoopPos[k]).norm();
 
             // Calculate the new position based on direction and speed
-            //GoopPos[k] += dir * GoopSpeed;
+            GoopPos[k] += dir * GoopSpeed;
 
             // Draw the Goop
             if (dir.x < 0) {
@@ -614,11 +614,7 @@ public:
         }
         if (Time >= 1.0f && WaveDisplay == false) {
             //Spawn Enemies
-            //SpawnGoop();
-            if (GoopPos.size() == 0 && KilledGoops < TotalEnemies[0]) {
-                //Goop random coord gen (walls) (spawns max goops)
-                GoopPos.push_back({ 10.0f, 10.0f });
-            }
+            SpawnGoop();
             SpawnSkeleton();
             MoveGoop(GoopSpeed, fElapsedTime);
             MoveSkeleton(SkeletonSpeed, fElapsedTime);
@@ -674,6 +670,7 @@ public:
         DrawSpiderwebs();
     }
     bool OnUserUpdate(float fElapsedTime) override {
+        //fElapsedTime = std::max(fElapsedTime, 0.16667f);
         if (GameState == MENU) {
             MenuFlashlight();
             MainMenu();
