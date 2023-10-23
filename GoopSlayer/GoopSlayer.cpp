@@ -26,6 +26,7 @@ public:
     std::unique_ptr<olc::Sprite> GoopRight;
     std::unique_ptr<olc::Sprite> GoopLeft;
     std::unique_ptr<olc::Sprite> Grass;
+    std::unique_ptr<olc::Sprite> ArcherLeft;
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> PumpkinArrow;
     std::unique_ptr<olc::Sprite> Arrow;
@@ -48,6 +49,7 @@ public:
     olc::Decal* GrassDecal;
     olc::Decal* GoopRightDecal;
     olc::Decal* GoopLeftDecal;
+    olc::Decal* ArcherLeftDecal;
     olc::Decal* ArcherRightDecal;
     olc::Decal* PumpkinArrowDecal;
     olc::Decal* ArrowDecal;
@@ -69,6 +71,8 @@ public:
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
     olc::vf2d ArcherPos = { 448.0f, 238.0f };
+    //True = ArcherRight, False = ArcherLeft
+    bool ArcherDir = true;
     //Menu variables
     int score = 0;
     int menu = 0;
@@ -142,7 +146,7 @@ public:
             //Skeletons
             //Increase max by one every 2 waves until Max ==  4
             //Increase total by 1 every wave until Total == 14
-            //Starting on Wave 5
+            //Starting on Wave 3
             if (Wave >= 3) {
                 if (MaxEnemies[1] < 4) {
                     WaveCounter[1]++;
@@ -180,36 +184,6 @@ public:
     }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
-            for (int k = 0; k < GoopPos.size(); k++) {
-                GoopPos.erase(GoopPos.begin() + k);
-            }
-            for (int k = 0; k < arrowPos.size(); k++) {
-                arrowPos.erase(arrowPos.begin() + k);
-                arrowVel.erase(arrowVel.begin() + k);
-            }
-            for (int k = 0; k < SkelePos.size(); k++) {
-                SkelePos.erase(SkelePos.begin() + k);
-                SkeleShoot.erase(SkeleShoot.begin() + k);
-                SkeleShootTimer.erase(SkeleShootTimer.begin() + k);
-            }
-            for (int k = 0; k < SkeleArrowPos.size(); k++) {
-                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-            }
-            ArcherPos.x = 448.0f;
-            ArcherPos.y = 238.0f;
-            score = 0;
-            Wave = 1;
-            Time = 0;
-            KilledGoops = 0;
-            KilledSkeles = 0;
-            MaxEnemies[0] = 1;
-            MaxEnemies[1] = 0;
-            TotalEnemies[0] = 3;
-            TotalEnemies[1] = 0;
-            WaveDisplay = true;
-            SkillCooldownTimer = 0;
-            SkillUsed = false;
             GameState = MENU;
         }
         if (GetKey(olc::Key::ESCAPE).bPressed) {
@@ -228,6 +202,38 @@ public:
         DrawDecal({ 0.0f, 515.0f }, Spiderweb1Decal, { 2.0f, 2.0f });
         DrawDecal({ 0.0f, 0.0f }, Spiderweb3Decal, { 2.0f, 2.0f });
         DrawDecal({ 928.0f, -5.0f }, Spiderweb4Decal, { 3.0f, 3.0f });
+    }
+    void ResetVariables() {
+        for (int k = 0; k < GoopPos.size(); k++) {
+            GoopPos.erase(GoopPos.begin() + k);
+        }
+        for (int k = 0; k < arrowPos.size(); k++) {
+            arrowPos.erase(arrowPos.begin() + k);
+            arrowVel.erase(arrowVel.begin() + k);
+        }
+        for (int k = 0; k < SkelePos.size(); k++) {
+            SkelePos.erase(SkelePos.begin() + k);
+            SkeleShoot.erase(SkeleShoot.begin() + k);
+            SkeleShootTimer.erase(SkeleShootTimer.begin() + k);
+        }
+        for (int k = 0; k < SkeleArrowPos.size(); k++) {
+            SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
+            SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
+        }
+        ArcherPos.x = 448.0f;
+        ArcherPos.y = 238.0f;
+        score = 0;
+        Wave = 1;
+        Time = 0;
+        KilledGoops = 0;
+        KilledSkeles = 0;
+        MaxEnemies[0] = 1;
+        MaxEnemies[1] = 0;
+        TotalEnemies[0] = 3;
+        TotalEnemies[1] = 0;
+        WaveDisplay = true;
+        SkillCooldownTimer = 0;
+        SkillUsed = false;
     }
     void MainMenu() {
         const bool play_hovered = (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365);
@@ -255,12 +261,7 @@ public:
         DrawStringDecal({ 5.0f, 5.0f }, MouseCoordXS, olc::WHITE, { 2.0f, 2.0f });
         DrawStringDecal({ 5.0f, 20.0f }, MouseCoordYS, olc::WHITE, { 2.0f, 2.0f });
         if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365 && (GetMouse(0).bPressed)) {
-            TotalEnemies.push_back(3);
-            TotalEnemies.push_back(0);
-            MaxEnemies.push_back(1);
-            MaxEnemies.push_back(0);
-            WaveCounter.push_back(0);
-            WaveCounter.push_back(0);
+            ResetVariables();
             GameState = GAME;
         }
         if (GetMouseX() >= 440 && GetMouseY() >= 400 && GetMouseX() <= 570 && GetMouseY() <= 460 && (GetMouse(0).bPressed)) {
@@ -336,18 +337,18 @@ public:
         olc::vi2d Archer(ArcherPos);
         olc::vi2d ArcherSize(60, 60);
         //Goop check
-        for (int k = 0; k < GoopPos.size(); k++) {
+        //for (int k = 0; k < GoopPos.size(); k++) {
             //Goop variables
-            olc::vi2d Goop(GoopPos[k]);
-            olc::vi2d GoopSize(64, 64);
+            //olc::vi2d Goop(GoopPos[k]);
+            //olc::vi2d GoopSize(64, 64);
 
-            if (Goop.x < ArcherPos.x + ArcherSize.x &&
-                Goop.x + GoopSize.x > Archer.x &&
-                Goop.y < Archer.y + ArcherSize.y &&
-                Goop.y + GoopSize.y > Archer.y) {
-                GameState = DEAD;
-            }
-        }
+            //if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                //Goop.x + GoopSize.x > Archer.x &&
+                //Goop.y < Archer.y + ArcherSize.y &&
+                //Goop.y + GoopSize.y > Archer.y) {
+                //GameState = DEAD;
+            //}
+        //}
         //Check if skeleton arrow hits player
         //for (int k = 0; k < SkeleArrowPos.size(); k++) {
             //Skele variables
@@ -424,7 +425,7 @@ public:
             olc::vf2d dir = (ArcherPos - GoopPos[k]).norm();
 
             // Calculate the new position based on direction and speed
-            GoopPos[k] += dir * GoopSpeed;
+            //GoopPos[k] += dir * GoopSpeed;
 
             // Draw the Goop
             if (dir.x < 0) {
@@ -538,9 +539,11 @@ public:
     void UserInput(float ArcherSpeed, float fElapsedTime) {
         if ((GetKey(olc::Key::LEFT).bHeld || (GetKey(olc::Key::A).bHeld)) && ArcherPos.x < 1024 && ArcherPos.x > -5) {
             ArcherPos.x -= ArcherSpeed;
+            ArcherDir = false;
         }
         if ((GetKey(olc::Key::RIGHT).bHeld || (GetKey(olc::Key::D).bHeld)) && ArcherPos.x < 1024 && ArcherPos.x > -5) {
             ArcherPos.x += ArcherSpeed;
+            ArcherDir = true;
         }
         if ((GetKey(olc::Key::UP).bHeld || (GetKey(olc::Key::W).bHeld)) && ArcherPos.y < 575 && ArcherPos.y > -5) {
             ArcherPos.y -= ArcherSpeed;
@@ -589,13 +592,20 @@ public:
         float ArcherSpeed = 200 * fElapsedTime;
         float GoopSpeed = 220 * fElapsedTime;
         float SkeletonSpeed = 240 * fElapsedTime;
-
+        
         //Draw Archer
-        DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        if (ArcherDir == true) {
+            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        }
+        if (ArcherDir == false) {
+            DrawDecal({ ArcherPos }, ArcherLeftDecal, { 2.0f, 2.0f });
+        }
+        
+        UserInput(ArcherSpeed, fElapsedTime);
+
         if (Time <= 5.0f && WaveDisplay == true) {
             DisplayWave();
         }
-        UserInput(ArcherSpeed, fElapsedTime);
         ShootArrow(fElapsedTime);
         WaveCheck();
         if (Time >= 5.0f && WaveDisplay == true) {
@@ -604,7 +614,11 @@ public:
         }
         if (Time >= 1.0f && WaveDisplay == false) {
             //Spawn Enemies
-            SpawnGoop();
+            //SpawnGoop();
+            if (GoopPos.size() == 0 && KilledGoops < TotalEnemies[0]) {
+                //Goop random coord gen (walls) (spawns max goops)
+                GoopPos.push_back({ 10.0f, 10.0f });
+            }
             SpawnSkeleton();
             MoveGoop(GoopSpeed, fElapsedTime);
             MoveSkeleton(SkeletonSpeed, fElapsedTime);
@@ -686,6 +700,12 @@ public:
 
 private:
     bool OnUserCreate() override {
+        TotalEnemies.push_back(3);
+        TotalEnemies.push_back(0);
+        MaxEnemies.push_back(1);
+        MaxEnemies.push_back(0);
+        WaveCounter.push_back(0);
+        WaveCounter.push_back(0);
         srand(time(NULL));
         //Sprites
         SkeletonTest = std::make_unique<olc::Sprite>("./Sprites/SkeletonTest.png");
@@ -702,6 +722,7 @@ private:
         Spiderweb2 = std::make_unique<olc::Sprite>("./Sprites/Spiderweb2.png");
         Spiderweb3 = std::make_unique <olc::Sprite>("./Sprites/SpiderwebTL_WSpider.png");
         Spiderweb4 = std::make_unique <olc::Sprite>("./Sprites/Brokenweb.png");
+        ArcherLeft = std::make_unique <olc::Sprite>("./Sprites/ArcherLeft.png");
         ArcherRight = std::make_unique<olc::Sprite>("./Sprites/ArcherRight.png");
         Grass = std::make_unique<olc::Sprite>("./Sprites/Grass.png");
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRightPumpkin.png");
@@ -727,6 +748,7 @@ private:
         GrassDecal = new olc::Decal(Grass.get());
         GoopRightDecal = new olc::Decal(GoopRight.get());
         GoopLeftDecal = new olc::Decal(GoopLeft.get());
+        ArcherLeftDecal = new olc::Decal(ArcherLeft.get());
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
         PumpkinArrowDecal = new olc::Decal(PumpkinArrow.get());
         ArrowDecal = new olc::Decal(Arrow.get());
