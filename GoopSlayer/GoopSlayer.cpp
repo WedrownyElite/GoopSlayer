@@ -69,7 +69,7 @@ public:
     //PoisonGoop variables
     std::vector<olc::vf2d> PoisonGoopVel;
     std::vector<olc::vf2d> PoisonGoopPos;
-    std::vector<int> PoisonBallShoot;
+    std::vector<int> PoisonBallShootBool;
     std::vector<float> PoisonBallTimer;
     int KilledPoison;
     //PoisonGoop Ball variables
@@ -176,6 +176,31 @@ public:
             }
         }
     }
+    void SpawnPoisonGoop() {
+        if (GoopPos.size() == 0 && KilledPoison < TotalEnemies[2]) {
+            //Goop random coord gen (walls) (spawns max goops)
+            for (int k = 0; k < MaxEnemies[2]; k++) {
+                int SideGoopNum = rand() % 4;
+
+                if (SideGoopNum == 0) {
+                    float GoopYNum = rand() % 575;
+                    GoopPos.push_back({ 0.f, GoopYNum });
+                }
+                if (SideGoopNum == 1) {
+                    float GoopXNum = rand() % 1023;
+                    GoopPos.push_back({ GoopXNum, 0 });
+                }
+                if (SideGoopNum == 2) {
+                    float GoopXNum = rand() % 1023;
+                    GoopPos.push_back({ GoopXNum, 575 });
+                }
+                if (SideGoopNum == 3) {
+                    float GoopYNum = rand() % 575;
+                    GoopPos.push_back({ 1023, GoopYNum });
+                }
+            }
+        }
+    }
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
         //Iterates through all Skeletons
         for (int k = 0; k < SkelePos.size(); k++) {
@@ -234,13 +259,13 @@ public:
             if (distance > 305.0f) {
                 //Calc new position
                 PoisonGoopPos[k] += dir.norm() * PoisonGoopSpeed;
-                PoisonBallShoot[k] = 0;
+                PoisonBallShootBool[k] = 0;
             }
             //If within 200 pixel range of user (remove 5f to stop vibrating)
             else if (distance <= 295.0f && distance > 5.0f) {
                 //Calc new position
                 PoisonGoopPos[k] -= dir.norm() * PoisonGoopSpeed;
-                PoisonBallShoot[k] = 1;
+                PoisonBallShootBool[k] = 1;
             }
             // Calculate the new position based on direction and speed
             PoisonGoopPos[k] += dir * PoisonGoopSpeed;
@@ -305,7 +330,7 @@ public:
     }
     void PoisonBallShoot(float fElapsedTime) {
         for (int k = 0; k < PoisonGoopPos.size(); k++) {
-            if (PoisonBallShoot[k] == true && PoisonBallTimer[k] >= 4.0f) {
+            if (PoisonBallShootBool[k] == true && PoisonBallTimer[k] >= 4.0f) {
                 olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
                 PoisonBallArcherPos.push_back(ArcherPos);
                 // Calculate velocity towards the target
@@ -342,6 +367,16 @@ public:
             }
             DrawSkeleArrow(fElapsedTime);
         }
+    }
+    void MoveEnemies(float PoisonGoopSpeed, float GoopSpeed, float SkeletonSpeed, float fElapsedTime) {
+        SpawnGoop();
+        SpawnSkeleton();
+        SpawnPoisonGoop();
+        MoveGoop(GoopSpeed, fElapsedTime);
+        MoveSkeleton(SkeletonSpeed, fElapsedTime);
+        SkeletonShoot(fElapsedTime);
+        MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
+        PoisonBallShoot(fElapsedTime);
     }
     void ArrowEnemyCheck() {
         //Iterates through all arrows
@@ -380,6 +415,23 @@ public:
                     SkeleShootTimer.erase(SkeleShootTimer.begin() + o);
                     score++;
                     KilledSkeles++;
+                }
+            }
+            //If arrow hit Poison Goop
+            for (int o = 0; o < PoisonGoopPos.size(); o++) {
+                olc::vi2d PoisonGoop(PoisonGoopPos[o]);
+                olc::vi2d PoisonSize(63, 63);
+
+                if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
+                    Arrow.x + ArrowSize.x > PoisonGoop.x &&
+                    Arrow.y < PoisonGoop.y + PoisonSize.y &&
+                    Arrow.y + ArrowSize.y > PoisonGoop.y) {
+                    arrowPos.erase(arrowPos.begin() + k);
+                    arrowVel.erase(arrowVel.begin() + k);
+                    PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
+                    PoisonBallShootBool.erase(PoisonBallShootBool.begin() + o);
+                    score++;
+                    KilledPoison++;
                 }
             }
         }
@@ -558,6 +610,8 @@ public:
     void WaveCheckDebug() {
         if (KilledGoops >= TotalEnemies[0] && KilledSkeles >= TotalEnemies[1] && KilledPoison >= TotalEnemies[2]) {
             KilledGoops = 0;
+            TotalEnemies[2]++;
+            MaxEnemies[2]++;
 
             Time = 0.0f;
             for (int k = 0; k < SkeleArrowPos.size(); k++) {
@@ -710,15 +764,6 @@ public:
             SkillUsed = false;
         }
     }
-    void MoveEnemies(float PoisonGoopSpeed, float GoopSpeed, float SkeletonSpeed, float fElapsedTime) {
-        SpawnGoop();
-        SpawnSkeleton();
-        MoveGoop(GoopSpeed, fElapsedTime);
-        MoveSkeleton(SkeletonSpeed, fElapsedTime);
-        SkeletonShoot(fElapsedTime);
-        MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
-        PoisonBallShoot(fElapsedTime);
-    }
     //GameStates
     void GameGameState(float fElapsedTime) {
         Clear(olc::BLACK);
@@ -784,7 +829,12 @@ public:
         float PoisonGoopSpeed = 180 * fElapsedTime;
 
         //Draw Archer
-        DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        if (ArcherDir == true) {
+            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
+        }
+        if (ArcherDir == false) {
+            DrawDecal({ ArcherPos }, ArcherLeftDecal, { 2.0f, 2.0f });
+        }
         if (Time <= 5.0f && WaveDisplay == true) {
             DisplayWave();
         }
@@ -837,10 +887,10 @@ private:
     bool OnUserCreate() override {
         TotalEnemies.push_back(3);
         TotalEnemies.push_back(0);
-        TotalEnemies.push_back(0);
+        TotalEnemies.push_back(1);
         MaxEnemies.push_back(1);
         MaxEnemies.push_back(0);
-        MaxEnemies.push_back(0);
+        MaxEnemies.push_back(1);
         WaveCounter.push_back(0);
         WaveCounter.push_back(0);
         WaveCounter.push_back(0);
