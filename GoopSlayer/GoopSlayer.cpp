@@ -97,6 +97,7 @@ public:
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
+    bool ArcherSlowed = false;
     olc::vf2d ArcherPos = { 448.0f, 238.0f };
     //True = ArcherRight, False = ArcherLeft
     bool ArcherDir = true;
@@ -316,7 +317,7 @@ public:
             }
 
             // Check if Ball hits Archer's last known position
-            if (PoisonBallDistance[i].mag() <= 50.0f) {
+            if (PoisonBallDistance[i].mag() <= 55.0f) {
                 PoisonSplashTimer.push_back(0);
                 PoisonSplashPos.push_back(PoisonBallPos[i]);
                 PoisonBallPos.erase(PoisonBallPos.begin() + i);
@@ -334,20 +335,20 @@ public:
                     DrawDecal(PoisonBallPos[i], PoisonBallRightDecal, { 1.0f, 1.0f });
                 }
             }
-
-            //Draw PoisonSplash
-            for (int k = 0; k < PoisonSplashTimer.size(); k++) {
-                if (PoisonSplashTimer[k] < 10.0f) {
-                    DrawDecal(PoisonSplashPos[i], PoisonSplatterDecal, { 3.0f, 3.0f });
-                }
-                if (PoisonSplashTimer[k] >= 10.0f) {
-                    PoisonSplashTimer.erase(PoisonSplashTimer.begin() + k);
-                    PoisonSplashPos.erase(PoisonSplashPos.begin() + k);
-                }
+        }
+    }
+    void DrawPoisonSplash() {
+        //Iterate through PoisonSplashs
+        for (int k = 0; k < PoisonSplashTimer.size(); k++) {
+            if (PoisonSplashTimer[k] < 5.0f) {
+                DrawDecal(PoisonSplashPos[k], PoisonSplatterDecal, { 3.0f, 3.0f });
+            }
+            if (PoisonSplashTimer[k] >= 5.0f) {
+                PoisonSplashTimer.erase(PoisonSplashTimer.begin() + k);
+                PoisonSplashPos.erase(PoisonSplashPos.begin() + k);
             }
         }
     }
-
     void PoisonBallShoot(float fElapsedTime) {
         for (int k = 0; k < PoisonGoopPos.size(); k++) {
             if (PoisonBallShootBool[k] == true && PoisonBallTimer[k] >= 2.5f) {
@@ -475,11 +476,7 @@ public:
         for (int k = 0; k < PoisonBallPos.size(); k++) {
             PoisonBallPos.erase(PoisonBallPos.begin() + k);
             PoisonBallVel.erase(PoisonBallVel.begin() + k);
-        }
-        for (int k = 0; k < PoisonBallDistance.size(); k++) {
             PoisonBallDistance.erase(PoisonBallDistance.begin() + k);
-        }
-        for (int k = 0; k < PoisonBallDistanceBool.size(); k++) {
             PoisonBallDistanceBool.erase(PoisonBallDistanceBool.begin() + k);
         }
         //Remove Poison splatters
@@ -579,6 +576,24 @@ public:
                 SkeleArrow.y < Archer.y + ArcherSize.y &&
                 SkeleArrow.y + SkeleArrowSize.y > Archer.y) {
                 GameState = DEAD;
+            }
+        }
+    }
+    void PlayerSlowPoison(float ArcherSpeed, float fElapsedTime) {
+        //Archer variables
+        olc::vi2d Archer(ArcherPos);
+        olc::vi2d ArcherSize(60, 60);
+        for (int k = 0; k < PoisonSplashPos.size(); k++) {
+            olc::vi2d Splash(PoisonSplashPos[k]);
+            olc::vi2d SplashSize(95, 95);
+            if (Splash.x < ArcherPos.x + ArcherSize.x &&
+                Splash.x + SplashSize.x > Archer.x &&
+                Splash.y < Archer.y + ArcherSize.y &&
+                Splash.y + SplashSize.y > Archer.y) {
+                ArcherSlowed = true;
+            }
+            else {
+                ArcherSlowed = false;
             }
         }
     }
@@ -852,12 +867,17 @@ public:
         for (int k = 0; k < PoisonSplashTimer.size(); k++) {
             PoisonSplashTimer[k] += fElapsedTime;
         }
-        Time += fElapsedTime;
+
         float ArcherSpeed = 200 * fElapsedTime;
+        Time += fElapsedTime;
+        if (ArcherSlowed == true) {
+            ArcherSpeed = 80 * fElapsedTime;
+        }
         float GoopSpeed = 220 * fElapsedTime;
         float SkeletonSpeed = 240 * fElapsedTime;
         float PoisonGoopSpeed = 180 * fElapsedTime;
-
+        //Draw Poison Splash, so player is above
+        DrawPoisonSplash();
         //Draw Archer
         if (ArcherDir == true) {
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
@@ -865,6 +885,7 @@ public:
         if (ArcherDir == false) {
             DrawDecal({ ArcherPos }, ArcherLeftDecal, { 2.0f, 2.0f });
         }
+        PlayerSlowPoison(ArcherSpeed, fElapsedTime);
 
         UserInput(ArcherSpeed, fElapsedTime);
 
