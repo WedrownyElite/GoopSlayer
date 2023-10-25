@@ -79,6 +79,7 @@ public:
     std::vector<olc::vf2d> PoisonBallSplashPos;
     std::vector<float> PoisonBallSplashTimer;
     std::vector<olc::vf2d> PoisonBallArcherPos;
+    std::vector<int> PoisonBallArcherPosBool;
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
@@ -298,6 +299,11 @@ public:
             PoisonBallPos[i] += PoisonBallVel[i] * fElapsedTime;
             olc::vf2d dir = (ArcherPos - PoisonBallPos[i]);
 
+            //When ball first thrown, save ArcherPos
+            if (PoisonBallArcherPosBool[i] == 0) {
+                PoisonBallArcherPos.push_back(ArcherPos);
+                PoisonBallArcherPosBool[i] = 1;
+            }
             //Arrow off-screen
             if (PoisonBallPos[i].x < 0 || PoisonBallPos[i].x >= ScreenWidth() || PoisonBallPos[i].y < 0 || PoisonBallPos[i].y >= ScreenHeight()) {
                 PoisonBallPos.erase(PoisonBallPos.begin() + i);
@@ -307,10 +313,10 @@ public:
             else {
                 //Draw arrow
                 if (dir.x < 0) {
-                    DrawDecal(PoisonBallPos[i], PoisonBallLeftDecal, { 1.0f, 1.0f } );
+                    DrawDecal(PoisonBallPos[i], PoisonBallLeftDecal, { 1.0f, 1.0f });
                 }
                 if (dir.x > 0) {
-                    DrawDecal(PoisonBallPos[i], PoisonBallRightDecal, { 1.0f, 1.0f } );
+                    DrawDecal(PoisonBallPos[i], PoisonBallRightDecal, { 1.0f, 1.0f });
                 }
             }
         }
@@ -319,6 +325,7 @@ public:
         for (int k = 0; k < PoisonGoopPos.size(); k++) {
             if (PoisonBallShootBool[k] == true && PoisonBallTimer[k] >= 4.0f) {
                 olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
+
                 // Calculate velocity towards the target
                 olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(PoisonGoopPos[k])).norm() * 400.0f;
 
@@ -326,17 +333,35 @@ public:
                 PoisonBallPos.push_back({ PoisonGoopPos[k].x + 24, PoisonGoopPos[k].y + 24 });
                 PoisonBallVel.push_back(vel);
                 PoisonBallTimer[k] = 0;
-
-                //if (PoisonBallPos == PoisonBallArcherPos) {
-                    //PoisonBallSplashPos.push_back(PoisonBallPos[k]);
-                    //PoisonBallSplash.push_back(1);
-                    //PoisonBallSplashTimer.push_back(0);
-                    //PoisonBallPos.erase(PoisonBallPos.begin() + k);
-                    //PoisonBallVel.erase(PoisonBallVel.begin() + k);
-                    //PoisonBallTimer.erase(PoisonBallTimer.begin() + k);
-                //}
+                PoisonBallArcherPosBool.push_back(0); 
+                PoisonBallSplash.push_back(0);
             }
             DrawPoisonBall(fElapsedTime);
+        }
+    }
+    void doPoisonBallSplash() {
+        for (int i = 0; i < PoisonBallPos.size(); i++) {
+            //Archer variables
+            olc::vi2d Archer(PoisonBallArcherPos[i]);
+            olc::vi2d ArcherSize(64, 64);
+            //Ball variables
+            olc::vi2d Ball(PoisonBallPos[i]);
+            olc::vi2d BallSize(64, 64);
+
+            //Check if Poison balls hit player
+
+            if (Ball.x < ArcherPos.x + ArcherSize.x &&
+                Ball.x + BallSize.x > Archer.x &&
+                Ball.y < Archer.y + ArcherSize.y &&
+                Ball.y + BallSize.y > Archer.y) {
+                PoisonBallSplash[i] = 1;
+                PoisonBallSplashPos.push_back(PoisonBallPos[i]);
+                PoisonBallSplashTimer.push_back(0);
+                PoisonBallPos.erase(PoisonBallPos.begin() + i);
+                PoisonBallVel.erase(PoisonBallVel.begin() + i);
+                PoisonBallArcherPosBool.erase(PoisonBallArcherPosBool.begin() + i);
+                PoisonBallArcherPos.erase(PoisonBallArcherPos.begin() + i);
+            }
         }
     }
     void SkeletonShoot(float fElapsedTime) {
@@ -363,6 +388,7 @@ public:
         SkeletonShoot(fElapsedTime);
         MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
         PoisonBallShoot(fElapsedTime);
+        doPoisonBallSplash();
     }
     void ArrowEnemyCheck() {
         //Iterates through all arrows
