@@ -14,7 +14,7 @@ public:
     std::unique_ptr<olc::Sprite> PoisonGoopRight;
     std::unique_ptr<olc::Sprite> PoisonBallLeft;
     std::unique_ptr<olc::Sprite> PoisonBallRight;
-    std::unique_ptr<olc::Sprite> PoinsonSplatter;
+    std::unique_ptr<olc::Sprite> PoisonSplatter;
     std::unique_ptr<olc::Sprite> Flashlight;
     std::unique_ptr<olc::Sprite> MenuBackground;
     std::unique_ptr<olc::Sprite> MenuArrow;
@@ -75,11 +75,11 @@ public:
     //PoisonGoop Ball variables
     std::vector<olc::vf2d> PoisonBallVel;
     std::vector<olc::vf2d> PoisonBallPos;
-    std::vector<int> PoisonBallSplash;
-    std::vector<olc::vf2d> PoisonBallSplashPos;
-    std::vector<float> PoisonBallSplashTimer;
-    std::vector<olc::vf2d> PoisonBallArcherPos;
-    std::vector<int> PoisonBallArcherPosBool;
+    std::vector<olc::vf2d> PoisonSplashPos;
+    std::vector<float> PoisonSplashTimer;
+    std::vector<olc::vf2d> PoisonBallDistance;
+    std::vector<olc::vf2d> PoisonArcherPos;
+    std::vector<int> PoisonBallDistanceBool;
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
@@ -182,24 +182,28 @@ public:
             for (int k = 0; k < MaxEnemies[2]; k++) {
                 int SideGoopNum = rand() % 4;
 
+                //Left Wall
                 if (SideGoopNum == 0) {
                     float GoopYNum = rand() % 575;
                     PoisonGoopPos.push_back({ 0.f, GoopYNum });
                 }
+                //Top Wall
                 if (SideGoopNum == 1) {
                     float GoopXNum = rand() % 1023;
                     PoisonGoopPos.push_back({ GoopXNum, 0 });
                 }
+                //Right Wall
                 if (SideGoopNum == 2) {
                     float GoopXNum = rand() % 1023;
                     PoisonGoopPos.push_back({ GoopXNum, 575 });
                 }
+                //Bottom Wall
                 if (SideGoopNum == 3) {
                     float GoopYNum = rand() % 575;
                     PoisonGoopPos.push_back({ 1023, GoopYNum });
                 }
                 PoisonBallShootBool.push_back(0);
-                PoisonBallTimer.push_back(4.0f);
+                PoisonBallTimer.push_back(0);
             }
         }
     }
@@ -297,33 +301,56 @@ public:
     void DrawPoisonBall(float fElapsedTime) {
         for (int i = 0; i < PoisonBallPos.size(); i++) {
             PoisonBallPos[i] += PoisonBallVel[i] * fElapsedTime;
-            olc::vf2d dir = (ArcherPos - PoisonBallPos[i]);
+            olc::vf2d distance = (ArcherPos - PoisonBallPos[i]);
 
-            //When ball first thrown, save ArcherPos
-            if (PoisonBallArcherPosBool[i] == 0) {
-                PoisonBallArcherPos.push_back(ArcherPos);
-                PoisonBallArcherPosBool[i] = 1;
+            // When ball first thrown, save positions and calculate distance
+            if (PoisonBallDistanceBool[i] == 0) {
+                PoisonBallDistance.push_back(ArcherPos - PoisonBallPos[i]);
+                PoisonArcherPos.push_back(ArcherPos);
+                PoisonBallDistanceBool[i] = 1;
             }
-            //Arrow off-screen
-            if (PoisonBallPos[i].x < 0 || PoisonBallPos[i].x >= ScreenWidth() || PoisonBallPos[i].y < 0 || PoisonBallPos[i].y >= ScreenHeight()) {
+
+            // If bool already true, calculate distance with recorded positions
+            if (PoisonBallDistanceBool[i] == 1) {
+                PoisonBallDistance[i] = (PoisonArcherPos[i] - PoisonBallPos[i]);
+            }
+
+            // Check if Ball hits Archer's last known position
+            if (PoisonBallDistance[i].mag() <= 50.0f) {
+                PoisonSplashTimer.push_back(0);
+                PoisonSplashPos.push_back(PoisonBallPos[i]);
                 PoisonBallPos.erase(PoisonBallPos.begin() + i);
                 PoisonBallVel.erase(PoisonBallVel.begin() + i);
-                i--;
+                PoisonBallDistanceBool.erase(PoisonBallDistanceBool.begin() + i);
+                PoisonArcherPos.erase(PoisonArcherPos.begin() + i);
             }
+
             else {
-                //Draw arrow
-                if (dir.x < 0) {
+                // Draw arrow
+                if (distance.x < 0) {
                     DrawDecal(PoisonBallPos[i], PoisonBallLeftDecal, { 1.0f, 1.0f });
                 }
-                if (dir.x > 0) {
+                if (distance.x > 0) {
                     DrawDecal(PoisonBallPos[i], PoisonBallRightDecal, { 1.0f, 1.0f });
+                }
+            }
+
+            //Draw PoisonSplash
+            for (int k = 0; k < PoisonSplashTimer.size(); k++) {
+                if (PoisonSplashTimer[k] < 10.0f) {
+                    DrawDecal(PoisonSplashPos[i], PoisonSplatterDecal, { 3.0f, 3.0f });
+                }
+                if (PoisonSplashTimer[k] >= 10.0f) {
+                    PoisonSplashTimer.erase(PoisonSplashTimer.begin() + k);
+                    PoisonSplashPos.erase(PoisonSplashPos.begin() + k);
                 }
             }
         }
     }
+
     void PoisonBallShoot(float fElapsedTime) {
         for (int k = 0; k < PoisonGoopPos.size(); k++) {
-            if (PoisonBallShootBool[k] == true && PoisonBallTimer[k] >= 4.0f) {
+            if (PoisonBallShootBool[k] == true && PoisonBallTimer[k] >= 2.5f) {
                 olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
 
                 // Calculate velocity towards the target
@@ -333,35 +360,9 @@ public:
                 PoisonBallPos.push_back({ PoisonGoopPos[k].x + 24, PoisonGoopPos[k].y + 24 });
                 PoisonBallVel.push_back(vel);
                 PoisonBallTimer[k] = 0;
-                PoisonBallArcherPosBool.push_back(0); 
-                PoisonBallSplash.push_back(0);
+                PoisonBallDistanceBool.push_back(0);
             }
             DrawPoisonBall(fElapsedTime);
-        }
-    }
-    void doPoisonBallSplash() {
-        for (int i = 0; i < PoisonBallPos.size(); i++) {
-            //Archer variables
-            olc::vi2d Archer(PoisonBallArcherPos[i]);
-            olc::vi2d ArcherSize(64, 64);
-            //Ball variables
-            olc::vi2d Ball(PoisonBallPos[i]);
-            olc::vi2d BallSize(64, 64);
-
-            //Check if Poison balls hit player
-
-            if (Ball.x < ArcherPos.x + ArcherSize.x &&
-                Ball.x + BallSize.x > Archer.x &&
-                Ball.y < Archer.y + ArcherSize.y &&
-                Ball.y + BallSize.y > Archer.y) {
-                PoisonBallSplash[i] = 1;
-                PoisonBallSplashPos.push_back(PoisonBallPos[i]);
-                PoisonBallSplashTimer.push_back(0);
-                PoisonBallPos.erase(PoisonBallPos.begin() + i);
-                PoisonBallVel.erase(PoisonBallVel.begin() + i);
-                PoisonBallArcherPosBool.erase(PoisonBallArcherPosBool.begin() + i);
-                PoisonBallArcherPos.erase(PoisonBallArcherPos.begin() + i);
-            }
         }
     }
     void SkeletonShoot(float fElapsedTime) {
@@ -388,7 +389,6 @@ public:
         SkeletonShoot(fElapsedTime);
         MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
         PoisonBallShoot(fElapsedTime);
-        doPoisonBallSplash();
     }
     void ArrowEnemyCheck() {
         //Iterates through all arrows
@@ -475,18 +475,17 @@ public:
         for (int k = 0; k < PoisonBallPos.size(); k++) {
             PoisonBallPos.erase(PoisonBallPos.begin() + k);
             PoisonBallVel.erase(PoisonBallVel.begin() + k);
-            for (int o = 0; o < PoisonBallArcherPos.size(); o++) {
-                PoisonBallArcherPos.erase(PoisonBallArcherPos.begin() + k);
-            }
-            for (int i = 0; i < PoisonBallSplash.size(); i++) {
-                PoisonBallSplash.erase(PoisonBallSplash.begin() + i);
-            }
-            for (int u = 0; u < PoisonBallSplashTimer.size(); u++) {
-                PoisonBallSplashTimer.erase(PoisonBallSplashTimer.begin() + u);
-            }
-            for (int y = 0; y < PoisonBallSplashPos.size(); y++) {
-                PoisonBallSplashPos.erase(PoisonBallSplashPos.begin() + y);
-            }
+        }
+        for (int k = 0; k < PoisonBallDistance.size(); k++) {
+            PoisonBallDistance.erase(PoisonBallDistance.begin() + k);
+        }
+        for (int k = 0; k < PoisonBallDistanceBool.size(); k++) {
+            PoisonBallDistanceBool.erase(PoisonBallDistanceBool.begin() + k);
+        }
+        //Remove Poison splatters
+        for (int k = 0; k < PoisonSplashPos.size(); k++) {
+            PoisonSplashPos.erase(PoisonSplashPos.begin() + k);
+            PoisonSplashTimer.erase(PoisonSplashTimer.begin() + k);
         }
         //Remove Skeleton arrows
         for (int k = 0; k < SkeleArrowPos.size(); k++) {
@@ -501,10 +500,10 @@ public:
         KilledGoops = 0;
         KilledSkeles = 0;
         KilledPoison = 0;
-        MaxEnemies[0] = 1;
+        MaxEnemies[0] = 0;
         MaxEnemies[1] = 0;
         MaxEnemies[2] = 1;
-        TotalEnemies[0] = 3;
+        TotalEnemies[0] = 0;
         TotalEnemies[1] = 0;
         TotalEnemies[2] = 1;
         WaveDisplay = true;
@@ -850,6 +849,9 @@ public:
                 PoisonBallTimer[k] += fElapsedTime;
             }
         }
+        for (int k = 0; k < PoisonSplashTimer.size(); k++) {
+            PoisonSplashTimer[k] += fElapsedTime;
+        }
         Time += fElapsedTime;
         float ArcherSpeed = 200 * fElapsedTime;
         float GoopSpeed = 220 * fElapsedTime;
@@ -976,6 +978,7 @@ private:
         WaveCounter.push_back(0);
         srand(time(NULL));
         //Sprites
+        PoisonSplatter = std::make_unique<olc::Sprite>("./Sprites/PoisonSplatter.png");
         PoisonGoopLeft = std::make_unique<olc::Sprite>("./Sprites/PoisonGoopLeft.png");
         PoisonGoopRight = std::make_unique<olc::Sprite>("./Sprites/PoisonGoopRight.png");
         PoisonBallLeft = std::make_unique<olc::Sprite>("./Sprites/PoisonBallLeft.png");
@@ -1003,6 +1006,7 @@ private:
         PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
+        PoisonSplatterDecal = new olc::Decal(PoisonSplatter.get());
         PoisonGoopLeftDecal = new olc::Decal(PoisonGoopLeft.get());
         PoisonGoopRightDecal = new olc::Decal(PoisonGoopRight.get());
         PoisonBallLeftDecal = new olc::Decal(PoisonBallLeft.get());
