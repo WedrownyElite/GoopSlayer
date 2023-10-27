@@ -256,9 +256,8 @@ public:
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
         for (int k = 0; k < GoopPos.size(); k++) {
             // Calculate direction towards the player
-            olc::vf2d dir = (ArcherPos - GoopPos[k].norm());
-            olc::vf2d dir1 = (ArcherPos - GoopPos[k]);
-            float distance = dir1.mag();
+            olc::vf2d dir = (ArcherPos - GoopPos[k]);
+            float distance = dir.mag();
             //If within 200 pixels, start charging
             if (distance <= 100.0f && CanCharge[k] == 1) {
                 ChargeTimerBool[k] = 1;
@@ -266,7 +265,7 @@ public:
 
             if (ChargeTimerBool[k] == 0) {
                 // Calculate the new position based on direction and speed
-                GoopPos[k] += dir * GoopSpeed;
+                GoopPos[k] += dir.norm() * GoopSpeed;
                 // Draw the Goop
                 if (dir.x < 0) {
                     DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
@@ -281,7 +280,7 @@ public:
         for (int k = 0; k < ChargeTimerBool.size(); k++) {
             if (ChargeTimerBool[k] == 1) {
                 // Calculate direction towards the player
-                olc::vf2d distance = (ArcherPos - GoopPos[k]).norm();
+                olc::vf2d distance = (ArcherPos - GoopPos[k]);
                 float ChargeGoopSpeed = 80 * fElapsedTime;
                 float BoostedGoopSpeed = 400 * fElapsedTime;
 
@@ -733,6 +732,9 @@ public:
         if (GetKey(olc::Key::E).bPressed && SkillUsed == false && Wave >= 1) {
             SpawnArrowRing(fElapsedTime);
             SkillUsed = true;
+        }
+        if (GetKey(olc::Key::ESCAPE).bPressed) {
+            GameState = QUIT;
         }
     }
     //Wave
