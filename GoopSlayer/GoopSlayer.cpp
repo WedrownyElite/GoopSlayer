@@ -8,6 +8,7 @@
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> LeavesTest;
     std::unique_ptr<olc::Sprite> SkeletonLeft;
     std::unique_ptr<olc::Sprite> SkeletonRight;
     std::unique_ptr<olc::Sprite> PoisonGoopLeft;
@@ -37,6 +38,7 @@ public:
     std::unique_ptr<olc::Sprite> PumpkinArrow;
     std::unique_ptr<olc::Sprite> Arrow;
     //Decals
+    olc::Decal* LeavesTestDecal;
     olc::Decal* SkeletonLeftDecal;
     olc::Decal* SkeletonRightDecal;
     olc::Decal* PoisonGoopLeftDecal;
@@ -83,6 +85,13 @@ public:
     //Goop variables
     std::vector<olc::vf2d> GoopVel;
     std::vector<olc::vf2d> GoopPos;
+    std::vector<int> ChargeCooldownBool;    //After completed charge
+    std::vector<float> ChargeCooldownTimer; //After completed charge
+    std::vector<float> ChargingTimer;       //Charging back (before)
+    std::vector<int> ChargingTimerBool;     //Charging back (before)
+    std::vector<int> ChargeTimerBool;       //Currently charging
+    std::vector<float> ChargeTimer;         //Currently charging
+    std::vector<int> CanCharge;             //Once cooldown is over, 
     int KilledGoops = 0;
     //Skeleton variables
     std::vector<olc::vf2d> SkeleVel;
@@ -118,8 +127,6 @@ public:
     bool SkillUsed = false;
     float CooldownNum = 0;
     float SkillCooldownTimer = 0;
-    //General variables
-    bool GrassDrawn = false;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
@@ -174,6 +181,13 @@ public:
                     float GoopYNum = rand() % 575;
                     GoopPos.push_back({ 1023, GoopYNum });
                 }
+                ChargeTimerBool.push_back(0);
+                ChargeCooldownBool.push_back(0);
+                ChargeTimer.push_back(0);
+                ChargeCooldownTimer.push_back(0);
+                ChargingTimer.push_back(0);
+                ChargingTimerBool.push_back(0);
+                CanCharge.push_back(1);
             }
         }
     }
@@ -242,17 +256,53 @@ public:
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
         for (int k = 0; k < GoopPos.size(); k++) {
             // Calculate direction towards the player
-            olc::vf2d dir = (ArcherPos - GoopPos[k]).norm();
-
-            // Calculate the new position based on direction and speed
-            GoopPos[k] += dir * GoopSpeed;
-
-            // Draw the Goop
-            if (dir.x < 0) {
-                DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
+            olc::vf2d dir = (ArcherPos - GoopPos[k].norm());
+            olc::vf2d dir1 = (ArcherPos - GoopPos[k]);
+            float distance = dir1.mag();
+            //If within 200 pixels, start charging
+            if (distance <= 100.0f && CanCharge[k] == 1) {
+                ChargeTimerBool[k] = 1;
             }
-            if (dir.x > 0) {
-                DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
+
+            if (ChargeTimerBool[k] == 0) {
+                // Calculate the new position based on direction and speed
+                GoopPos[k] += dir * GoopSpeed;
+                // Draw the Goop
+                if (dir.x < 0) {
+                    DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
+                }
+                if (dir.x > 0) {
+                    DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
+                }
+            }
+        }
+    }
+    void doChargeGoop(float GoopSpeed, float fElapsedTime) {
+        for (int k = 0; k < ChargeTimerBool.size(); k++) {
+            if (ChargeTimerBool[k] == 1) {
+                // Calculate direction towards the player
+                olc::vf2d distance = (ArcherPos - GoopPos[k]).norm();
+                float ChargeGoopSpeed = 80 * fElapsedTime;
+                float BoostedGoopSpeed = 400 * fElapsedTime;
+
+                // Calculate the new position based on direction and speed
+                //Charge back
+                if (ChargeTimer[k] < 5.0f && CanCharge[k] == 1) {
+                    GoopPos[k] -= distance * ChargeGoopSpeed;
+                }
+                //Charging into player
+                if (ChargeTimer[k] >= 5.0f && ChargingTimerBool[k] == 0 && ChargingTimer[k] < 2.0f && CanCharge[k] == 1) {
+                    GoopPos[k] += distance * BoostedGoopSpeed;
+                }
+                //When done charging (2 seconds) charge cooldown started
+                if (ChargingTimer[k] >= 2.0f) {
+                    ChargeCooldownBool[k] = 1;
+                    ChargeTimerBool[k] = 0;
+                    ChargeTimer[k] = 0;
+                    ChargingTimer[k] = 0;
+                    ChargingTimerBool[k] = 0;
+                    CanCharge[k] = 0;
+                }
             }
         }
     }
@@ -452,43 +502,43 @@ public:
     //Player
     void ResetVariables() {
         //Remove poison goops
-        for (int k = 0; k < PoisonGoopPos.size(); k++) {
-            PoisonGoopPos.erase(PoisonGoopPos.begin() + k);
-            PoisonBallShootBool.erase(PoisonBallShootBool.begin() + k);
-            PoisonBallTimer.erase(PoisonBallTimer.begin() + k);
-        }
+        PoisonGoopPos.clear();
+        PoisonBallShootBool.clear();
+        PoisonBallTimer.clear();
+
         //Remove goops
-        for (int k = 0; k < GoopPos.size(); k++) {
-            GoopPos.erase(GoopPos.begin() + k);
-        }
+        GoopPos.clear();
+        ChargeCooldownBool.clear();
+        ChargeCooldownTimer.clear();
+        ChargingTimer.clear();
+        ChargingTimerBool.clear();
+        ChargeTimerBool.clear();
+        ChargeTimer.clear();
+        CanCharge.clear();
+
         //Remove player arrows
-        for (int k = 0; k < arrowPos.size(); k++) {
-            arrowPos.erase(arrowPos.begin() + k);
-            arrowVel.erase(arrowVel.begin() + k);
-        }
+        arrowPos.clear();
+        arrowVel.clear();
+
         //Remove Skeletons
-        for (int k = 0; k < SkelePos.size(); k++) {
-            SkelePos.erase(SkelePos.begin() + k);
-            SkeleShoot.erase(SkeleShoot.begin() + k);
-            SkeleShootTimer.erase(SkeleShootTimer.begin() + k);
-        }
+        SkelePos.clear();
+        SkeleShoot.clear();
+        SkeleShootTimer.clear();
+
         //Remove Poison Balls
-        for (int k = 0; k < PoisonBallPos.size(); k++) {
-            PoisonBallPos.erase(PoisonBallPos.begin() + k);
-            PoisonBallVel.erase(PoisonBallVel.begin() + k);
-            PoisonBallDistance.erase(PoisonBallDistance.begin() + k);
-            PoisonBallDistanceBool.erase(PoisonBallDistanceBool.begin() + k);
-        }
+        PoisonBallPos.clear();
+        PoisonBallVel.clear();
+        PoisonBallDistance.clear();
+        PoisonBallDistanceBool.clear();
+
         //Remove Poison splatters
-        for (int k = 0; k < PoisonSplashPos.size(); k++) {
-            PoisonSplashPos.erase(PoisonSplashPos.begin() + k);
-            PoisonSplashTimer.erase(PoisonSplashTimer.begin() + k);
-        }
+        PoisonSplashPos.clear();
+        PoisonSplashTimer.clear();
+
         //Remove Skeleton arrows
-        for (int k = 0; k < SkeleArrowPos.size(); k++) {
-            SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-            SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-        }
+        SkeleArrowPos.clear();
+        SkeleArrowVel.clear();
+
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
         score = 0;
@@ -497,12 +547,12 @@ public:
         KilledGoops = 0;
         KilledSkeles = 0;
         KilledPoison = 0;
-        MaxEnemies[0] = 0;
+        MaxEnemies[0] = 1;
         MaxEnemies[1] = 0;
-        MaxEnemies[2] = 1;
-        TotalEnemies[0] = 0;
+        MaxEnemies[2] = 0;
+        TotalEnemies[0] = 1;
         TotalEnemies[1] = 0;
-        TotalEnemies[2] = 1;
+        TotalEnemies[2] = 0;
         WaveDisplay = true;
         SkillCooldownTimer = 0;
         SkillUsed = false;
@@ -711,17 +761,17 @@ public:
         if (KilledGoops >= TotalEnemies[0] && KilledSkeles >= TotalEnemies[1] && KilledPoison >= TotalEnemies[2]) {
             KilledGoops = 0;
             KilledSkeles = 0;
+            KilledPoison = 0;
             Time = 0.0f;
             //Remove any skeleton arrows when wave ends
-            for (int k = 0; k < SkeleArrowPos.size(); k++) {
-                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-            }
-            //Remove any PoisonBalls when wave ends
-            for (int k = 0; k < PoisonBallPos.size(); k++) {
-                PoisonBallPos.erase(PoisonBallPos.begin() + k);
-                PoisonBallVel.erase(PoisonBallVel.begin() + k);
-            }
+            SkeleArrowPos.clear();
+            SkeleArrowVel.clear();
+            //Remove any Poison abilities when wave ends
+            PoisonBallPos.clear();
+            PoisonBallVel.clear();
+            PoisonSplashPos.clear();
+            PoisonSplashTimer.clear();
+
             WaveDisplay = true;
             WaveCounter[0]++;
             WaveCounter[1]++;
@@ -819,13 +869,12 @@ public:
             GameState = DEBUG;
         }
     }
-    bool DrawGrass() {
+    void DrawGrass() {
         for (int x = 0; x < 1024; x += 32) {
             for (int y = 0; y < 576; y += 32) {
                 DrawDecal({ (float)x, (float)y }, GrassDecal);
             }
         }
-        return GrassDrawn = true;
     }
     void DrawSpiderwebs() {
         DrawDecal({ 960.0f, 515.0f }, Spiderweb2Decal, { 2.0f, 2.0f });
@@ -852,18 +901,41 @@ public:
     void GameGameState(float fElapsedTime) {
         Clear(olc::BLACK);
         //Draw Grass
-        GrassDrawn = DrawGrass();
+        DrawGrass();
+        //Draw leaves
+        DrawDecal({ 0.0f, 0.0f }, LeavesTestDecal, { 1.0f, 1.0f });
         //Timers
+        //Currently Charging Goop
+        for (int k = 0; k < GoopPos.size(); k++) {
+            if (ChargingTimerBool[k] == 1) {
+                ChargingTimer[k] += fElapsedTime;
+            }
+        }
+        //Goop Charge Cooldown
+        for (int k = 0; k < GoopPos.size(); k++) {
+            if (ChargeCooldownBool[k] == 1) {
+                ChargeCooldownTimer[k] += fElapsedTime;
+            }
+        }
+        //Goop Charge
+        for (int k = 0; k < GoopPos.size(); k++) {
+            if (ChargeTimer[k] == 1) {
+                ChargeTimer[k] += fElapsedTime;
+            }
+        }
+        //Skeleton Shoot
         for (int k = 0; k < SkelePos.size(); k++) {
             if (SkeleShoot[k] == 1) {
                 SkeleShootTimer[k] += fElapsedTime;
             }
         }
+        //Poison Ball Shoot
         for (int k = 0; k < PoisonGoopPos.size(); k++) {
             if (PoisonBallShootBool[k] == 1) {
                 PoisonBallTimer[k] += fElapsedTime;
             }
         }
+        //Poison Splash
         for (int k = 0; k < PoisonSplashTimer.size(); k++) {
             PoisonSplashTimer[k] += fElapsedTime;
         }
@@ -913,7 +985,9 @@ public:
     void DebugGameState(float fElapsedTime) {
         Clear(olc::BLACK);
         //Draw Grass
-        GrassDrawn = DrawGrass();
+        DrawGrass();
+        //Draw Leaves
+        DrawDecal({ 0.0f, 0.0f }, LeavesTestDecal, { 1.0f, 1.0f });
         //Timers
         for (int k = 0; k < SkelePos.size(); k++) {
             if (SkeleShoot[k] == 1) {
@@ -999,6 +1073,7 @@ private:
         WaveCounter.push_back(0);
         srand(time(NULL));
         //Sprites
+        LeavesTest = std::make_unique<olc::Sprite>("./Sprites/Leaves.png");
         PoisonSplatter = std::make_unique<olc::Sprite>("./Sprites/PoisonSplatter.png");
         PoisonGoopLeft = std::make_unique<olc::Sprite>("./Sprites/PoisonGoopLeft.png");
         PoisonGoopRight = std::make_unique<olc::Sprite>("./Sprites/PoisonGoopRight.png");
@@ -1027,6 +1102,7 @@ private:
         PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
+        LeavesTestDecal = new olc::Decal(LeavesTest.get());
         PoisonSplatterDecal = new olc::Decal(PoisonSplatter.get());
         PoisonGoopLeftDecal = new olc::Decal(PoisonGoopLeft.get());
         PoisonGoopRightDecal = new olc::Decal(PoisonGoopRight.get());
