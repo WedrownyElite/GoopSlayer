@@ -225,6 +225,7 @@ public:
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
         //Iterates through all Skeletons
         for (int k = 0; k < SkelePos.size(); k++) {
+            SkelePos[k] = { 300.0f, 300.0f };
             // Calculate direction towards the player
             olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[k]);
 
@@ -246,9 +247,11 @@ public:
             }
             // Draw the Skeleton
             if (dir.x < 0) {
+                FillRectDecal({ SkelePos[k].x + 15, SkelePos[k].y + 5 }, { 39.0f, 59.0f }, olc::BLACK);
                 DrawDecal({ SkelePos[k] }, SkeletonLeftDecal, { 2.0f, 2.0f });
             }
             if (dir.x > 0) {
+                FillRectDecal({ SkelePos[k].x + 15, SkelePos[k].y + 5 }, { 39.0f, 59.0f }, olc::BLACK);
                 DrawDecal({ SkelePos[k] }, SkeletonRightDecal, { 2.0f, 2.0f });
             }
         }
@@ -436,9 +439,9 @@ public:
         SpawnPoisonGoop();
         MoveGoop(GoopSpeed, fElapsedTime);
         MoveSkeleton(SkeletonSpeed, fElapsedTime);
-        SkeletonShoot(fElapsedTime);
+        //SkeletonShoot(fElapsedTime);
         MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
-        PoisonBallShoot(fElapsedTime);
+        //PoisonBallShoot(fElapsedTime);
     }
     void ArrowEnemyCheck() {
         //Iterates through all arrows
@@ -447,8 +450,8 @@ public:
             olc::vi2d ArrowSize(30, 30);
             //Checks if arrows hit any goops
             for (int o = 0; o < GoopPos.size(); o++) {
-                olc::vi2d Goop(GoopPos[o]);
-                olc::vi2d GoopSize(63, 63);
+                olc::vf2d Goop({ GoopPos[o].x + 5, GoopPos[o].y + 5 });
+                olc::vf2d GoopSize(56.0f, 60.0f);
 
                 if (Arrow.x < Goop.x + GoopSize.x &&
                     Arrow.x + ArrowSize.x > Goop.x &&
@@ -546,11 +549,11 @@ public:
         KilledGoops = 0;
         KilledSkeles = 0;
         KilledPoison = 0;
-        MaxEnemies[0] = 1;
-        MaxEnemies[1] = 0;
+        MaxEnemies[0] = 0;
+        MaxEnemies[1] = 1;
         MaxEnemies[2] = 0;
-        TotalEnemies[0] = 1;
-        TotalEnemies[1] = 0;
+        TotalEnemies[0] = 0;
+        TotalEnemies[1] = 1;
         TotalEnemies[2] = 0;
         WaveDisplay = true;
         SkillCooldownTimer = 0;
@@ -901,6 +904,7 @@ public:
     }
     //GameStates
     void GameGameState(float fElapsedTime) {
+        fElapsedTime = std::min(fElapsedTime, 0.16667f);
         Clear(olc::BLACK);
         //Draw Grass
         DrawGrass();
