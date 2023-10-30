@@ -36,7 +36,7 @@ public:
     std::unique_ptr<olc::Sprite> ArcherLeft;
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> PumpkinArrow;
-    std::unique_ptr<olc::Sprite> Arrow;
+    std::unique_ptr<olc::Sprite> ArrowHitBoxPos;
     //Decals
     olc::Decal* LeavesTestDecal;
     olc::Decal* SkeletonLeftDecal;
@@ -97,12 +97,12 @@ public:
     std::vector<olc::vf2d> SkeleVel;
     std::vector<olc::vf2d> SkelePos;
     int KilledSkeles = 0;
-    //Skeleton arrow variables
+    //Skeleton ArrowHitBoxPos variables
     std::vector<olc::vf2d> SkeleArrowPos;
     std::vector<olc::vf2d> SkeleArrowVel;
     std::vector<int> SkeleShoot;
     std::vector<float> SkeleShootTimer;
-    //Player Arrow variables
+    //Player ArrowHitBoxPos variables
     std::vector<olc::vf2d> arrowPos;
     std::vector<olc::vf2d> arrowVel;
     //Archer variables
@@ -130,6 +130,23 @@ public:
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
+    }
+    //Math shit EW
+    // Function to rotate a point around another point by a given angle
+    olc::vf2d RotatePoint(const olc::vf2d& point, const olc::vf2d& center, float angle) {
+        float s = sin(angle);
+        float c = cos(angle);
+
+        // Translate point back to the origin
+        olc::vf2d translated = point - center;
+
+        // Rotate point
+        olc::vf2d rotated;
+        rotated.x = translated.x * c - translated.y * s;
+        rotated.y = translated.x * s + translated.y * c;
+
+        // Translate point back
+        return rotated + center;
     }
     //Enemies
     void SpawnSkeleton() {
@@ -255,18 +272,17 @@ public:
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
         for (int k = 0; k < GoopPos.size(); k++) {
-            GoopPos[k] = { 800.0f, 800.0f };
             // Calculate direction towards the player
             olc::vf2d dir = (ArcherPos - GoopPos[k]);
             float distance = dir.mag();
             //If within 200 pixels, start charging
-            if (distance <= 100.0f && CanCharge[k] == 1) {
-                ChargeTimerBool[k] = 1;
-            }
+            //if (distance <= 100.0f && CanCharge[k] == 1) {
+                //ChargeTimerBool[k] = 1;
+            //}
 
-            if (ChargeTimerBool[k] == 0) {
+            //if (ChargeTimerBool[k] == 0) {
                 // Calculate the new position based on direction and speed
-                //GoopPos[k] += dir.norm() * GoopSpeed;
+                GoopPos[k] += dir.norm() * GoopSpeed;
                 // Draw the Goop
                 if (dir.x < 0) {
                     DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
@@ -274,7 +290,7 @@ public:
                 if (dir.x > 0) {
                     DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
                 }
-            }
+            //}
         }
     }
     void doChargeGoop(float GoopSpeed, float fElapsedTime) {
@@ -337,7 +353,7 @@ public:
         for (size_t i = 0; i < SkeleArrowPos.size(); i++) {
             SkeleArrowPos[i] += SkeleArrowVel[i] * fElapsedTime;
 
-            //Arrow off-screen
+            //ArrowHitBoxPos off-screen
             if (SkeleArrowPos[i].x < 0 || SkeleArrowPos[i].x >= ScreenWidth() || SkeleArrowPos[i].y < 0 || SkeleArrowPos[i].y >= ScreenHeight()) {
                 SkeleArrowPos.erase(SkeleArrowPos.begin() + i);
                 SkeleArrowVel.erase(SkeleArrowVel.begin() + i);
@@ -346,7 +362,7 @@ public:
             else {
                 //Angle of roation
                 float angle = atan2f(SkeleArrowVel[i].y, SkeleArrowVel[i].x);
-                //Draw arrow
+                //Draw ArrowHitBoxPos
                 DrawRotatedDecal(SkeleArrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
             }
         }
@@ -379,7 +395,7 @@ public:
             }
 
             else {
-                // Draw arrow
+                // Draw ArrowHitBoxPos
                 if (distance.x < 0) {
                     DrawDecal(PoisonBallPos[i], PoisonBallLeftDecal, { 1.0f, 1.0f });
                 }
@@ -409,7 +425,7 @@ public:
                 // Calculate velocity towards the target
                 olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(PoisonGoopPos[k])).norm() * 400.0f;
 
-                // Store the arrow's position and velocity
+                // Store the ArrowHitBoxPos's position and velocity
                 PoisonBallPos.push_back({ PoisonGoopPos[k].x + 24, PoisonGoopPos[k].y + 24 });
                 PoisonBallVel.push_back(vel);
                 PoisonBallTimer[k] = 0;
@@ -425,7 +441,7 @@ public:
                 // Calculate velocity towards the target
                 olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(SkelePos[k])).norm() * 400.0f;
 
-                // Store the arrow's position and velocity
+                // Store the ArrowHitBoxPos's position and velocity
                 SkeleArrowPos.push_back({ SkelePos[k].x + 24, SkelePos[k].y + 24 });
                 SkeleArrowVel.push_back(vel);
                 SkeleShootTimer[k] = 0;
@@ -446,8 +462,23 @@ public:
     void ArrowEnemyCheck() {
         //Iterates through all arrows
         for (int k = 0; k < arrowPos.size(); k++) {
-            olc::vi2d Arrow(arrowPos[k]);
+            olc::vi2d ArrowHitBoxPos(arrowPos[k]);
             olc::vi2d ArrowSize(30, 30);
+
+            float angle = atan2f(arrowVel[k].y, arrowVel[k].x);
+
+            // Calculate the position and size of the ArrowHitBoxPos hitbox
+            olc::vf2d ArrowHitboxPos = arrowPos[k];
+            olc::vf2d ArrowHitboxSize = ArrowSize;
+
+            // Apply rotation to the hitbox position
+            ArrowHitboxPos -= ArrowHitboxSize * 0.5f; // Center the hitbox
+            ArrowHitboxPos = RotatePoint(ArrowHitboxPos, arrowPos[k], angle);
+
+            //Apply rotation to the hitbox size
+            float maxDimension = std::max(ArrowHitboxSize.x, ArrowHitboxSize.y);
+            ArrowHitboxSize = { maxDimension, maxDimension };
+
             //Checks if arrows hit any goops
             for (int o = 0; o < GoopPos.size(); o++) {
                 olc::vf2d dir = (ArcherPos - GoopPos[o]);
@@ -457,10 +488,10 @@ public:
                     olc::vf2d Goop({ GoopPos[o].x + 1, GoopPos[o].y + 6 });
                     olc::vf2d GoopSize(60.0f, 56.0f);
 
-                    if (Arrow.x < Goop.x + GoopSize.x &&
-                        Arrow.x + ArrowSize.x > Goop.x &&
-                        Arrow.y < Goop.y + GoopSize.y &&
-                        Arrow.y + ArrowSize.y > Goop.y) {
+                    if (ArrowHitBoxPos.x < Goop.x + GoopSize.x &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > Goop.x &&
+                        ArrowHitBoxPos.y < Goop.y + GoopSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > Goop.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         GoopPos.erase(GoopPos.begin() + o);
@@ -473,10 +504,10 @@ public:
                     olc::vf2d Goop({ GoopPos[o].x + 3, GoopPos[o].y + 6 });
                     olc::vf2d GoopSize(60.0f, 56.0f);
 
-                    if (Arrow.x < Goop.x + GoopSize.x &&
-                        Arrow.x + ArrowSize.x > Goop.x &&
-                        Arrow.y < Goop.y + GoopSize.y &&
-                        Arrow.y + ArrowSize.y > Goop.y) {
+                    if (ArrowHitBoxPos.x < Goop.x + GoopSize.x &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > Goop.x &&
+                        ArrowHitBoxPos.y < Goop.y + GoopSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > Goop.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         GoopPos.erase(GoopPos.begin() + o);
@@ -493,10 +524,10 @@ public:
                     olc::vf2d Skeleton(SkelePos[o].x + 10, SkelePos[o].y + 5);
                     olc::vf2d SkeleSize(39.0f, 59.0f);
 
-                    if (Arrow.x < Skeleton.x + SkeleSize.y &&
-                        Arrow.x + ArrowSize.x > Skeleton.x &&
-                        Arrow.y < Skeleton.y + SkeleSize.y &&
-                        Arrow.y + ArrowSize.y > Skeleton.y) {
+                    if (ArrowHitBoxPos.x < Skeleton.x + SkeleSize.y &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > Skeleton.x &&
+                        ArrowHitBoxPos.y < Skeleton.y + SkeleSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > Skeleton.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         SkelePos.erase(SkelePos.begin() + o);
@@ -511,10 +542,10 @@ public:
                     olc::vf2d Skeleton(SkelePos[o].x + 15, SkelePos[o].y + 5);
                     olc::vf2d SkeleSize( 39.0f, 59.0f );
 
-                    if (Arrow.x < Skeleton.x + SkeleSize.y &&
-                        Arrow.x + ArrowSize.x > Skeleton.x &&
-                        Arrow.y < Skeleton.y + SkeleSize.y &&
-                        Arrow.y + ArrowSize.y > Skeleton.y) {
+                    if (ArrowHitBoxPos.x < Skeleton.x + SkeleSize.y &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > Skeleton.x &&
+                        ArrowHitBoxPos.y < Skeleton.y + SkeleSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > Skeleton.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         SkelePos.erase(SkelePos.begin() + o);
@@ -526,7 +557,7 @@ public:
                 }
 
             }
-            //If arrow hit Poison Goop
+            //If ArrowHitBoxPos hit Poison Goop
             for (int o = 0; o < PoisonGoopPos.size(); o++) {
                 olc::vf2d dir = (ArcherPos - PoisonGoopPos[o]);
 
@@ -535,10 +566,10 @@ public:
                     olc::vf2d PoisonGoop(PoisonGoopPos[o].x + 3, PoisonGoopPos[o].y + 5);
                     olc::vf2d PoisonSize(48.0f, 60.0f);
 
-                    if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
-                        Arrow.x + ArrowSize.x > PoisonGoop.x &&
-                        Arrow.y < PoisonGoop.y + PoisonSize.y &&
-                        Arrow.y + ArrowSize.y > PoisonGoop.y) {
+                    if (ArrowHitBoxPos.x < PoisonGoop.x + PoisonSize.y &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > PoisonGoop.x &&
+                        ArrowHitBoxPos.y < PoisonGoop.y + PoisonSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > PoisonGoop.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
@@ -552,10 +583,10 @@ public:
                     olc::vf2d PoisonGoop(PoisonGoopPos[o].x + 12, PoisonGoopPos[o].y + 5);
                     olc::vf2d PoisonSize(48.0f, 60.0f);
 
-                    if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
-                        Arrow.x + ArrowSize.x > PoisonGoop.x &&
-                        Arrow.y < PoisonGoop.y + PoisonSize.y &&
-                        Arrow.y + ArrowSize.y > PoisonGoop.y) {
+                    if (ArrowHitBoxPos.x < PoisonGoop.x + PoisonSize.y &&
+                        ArrowHitBoxPos.x + ArrowHitboxSize.x > PoisonGoop.x &&
+                        ArrowHitBoxPos.y < PoisonGoop.y + PoisonSize.y &&
+                        ArrowHitBoxPos.y + ArrowHitboxSize.y > PoisonGoop.y) {
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
@@ -624,7 +655,6 @@ public:
         WaveDisplay = true;
         SkillCooldownTimer = 0;
         SkillUsed = false;
-        arrowPos.push_back({ 300.0f, 300.0f });
     }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
@@ -643,19 +673,43 @@ public:
     }
     void PlayerDeadCheck() {
         //Archer variables
-        olc::vi2d Archer(ArcherPos);
-        olc::vi2d ArcherSize(60, 60);
+        olc::vf2d Archer;
+        olc::vf2d ArcherSize;
+        if (ArcherDir == true) {
+            Archer = { ArcherPos.x + 14.0f, ArcherPos.y + 6.0f };
+            ArcherSize = { 44.0f, 58.0f };
+        }
+        else if (ArcherDir == false) {  
+            Archer = { ArcherPos.x + 6.0f, ArcherPos.y + 6.0f };
+            ArcherSize = { 44.0f, 58.0f };
+        }
         //Goop check
         for (int k = 0; k < GoopPos.size(); k++) {
-            //Goop variables
-            olc::vi2d Goop(GoopPos[k]);
-            olc::vi2d GoopSize(64, 64);
+            olc::vf2d dir = (ArcherPos - GoopPos[k]);
 
-            if (Goop.x < ArcherPos.x + ArcherSize.x &&
-                Goop.x + GoopSize.x > Archer.x &&
-                Goop.y < Archer.y + ArcherSize.y &&
-                Goop.y + GoopSize.y > Archer.y) {
-                GameState = DEAD;
+            //Goop facing left hitbox
+            if (dir.x < 0) {
+                olc::vf2d Goop({ GoopPos[k].x + 1, GoopPos[k].y + 6 });
+                olc::vf2d GoopSize(60.0f, 56.0f);
+
+                if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                    Goop.x + GoopSize.x > Archer.x &&
+                    Goop.y < Archer.y + ArcherSize.y &&
+                    Goop.y + GoopSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
+            }
+            //Goop facing right hitbox
+            if (dir.x < 0) {
+                olc::vf2d Goop({ GoopPos[k].x + 3, GoopPos[k].y + 6 });
+                olc::vf2d GoopSize(60.0f, 56.0f);
+
+                if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                    Goop.x + GoopSize.x > Archer.x &&
+                    Goop.y < Archer.y + ArcherSize.y &&
+                    Goop.y + GoopSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
             }
         }
         //PoisonGoop Check
@@ -664,11 +718,31 @@ public:
             olc::vi2d Poison(PoisonGoopPos[k]);
             olc::vi2d PoisonSize(64, 64);
 
-            if (Poison.x < ArcherPos.x + ArcherSize.x &&
-                Poison.x + PoisonSize.x > Archer.x &&
-                Poison.y < Archer.y + ArcherSize.y &&
-                Poison.y + PoisonSize.y > Archer.y) {
-                GameState = DEAD;
+            olc::vf2d dir = (ArcherPos - PoisonGoopPos[k]);
+
+            //PoisonGoop facing left hitbox
+            if (dir.x < 0) {
+                olc::vf2d PoisonGoop(PoisonGoopPos[k].x + 3, PoisonGoopPos[k].y + 5);
+                olc::vf2d PoisonSize(48.0f, 60.0f);
+
+                if (Poison.x < ArcherPos.x + ArcherSize.x &&
+                    Poison.x + PoisonSize.x > Archer.x &&
+                    Poison.y < Archer.y + ArcherSize.y &&
+                    Poison.y + PoisonSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
+            }
+            //PoisonGoop facing right hitbox
+            if (dir.x > 0) {
+                olc::vf2d PoisonGoop(PoisonGoopPos[k].x + 12, PoisonGoopPos[k].y + 5);
+                olc::vf2d PoisonSize(48.0f, 60.0f);
+
+                if (Poison.x < ArcherPos.x + ArcherSize.x &&
+                    Poison.x + PoisonSize.x > Archer.x &&
+                    Poison.y < Archer.y + ArcherSize.y &&
+                    Poison.y + PoisonSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
             }
         }
         //Check if Poison balls hit player
@@ -684,16 +758,30 @@ public:
                 GameState = DEAD;
             }
         }
-        //Check if skeleton arrow hits player
+        //Check if skeleton ArrowHitBoxPos hits player
         for (int k = 0; k < SkeleArrowPos.size(); k++) {
             //Skele variables
             olc::vi2d SkeleArrow(SkeleArrowPos[k]);
             olc::vi2d SkeleArrowSize(32, 32);
 
-            if (SkeleArrow.x < ArcherPos.x + ArcherSize.x &&
-                SkeleArrow.x + SkeleArrowSize.x > Archer.x &&
-                SkeleArrow.y < Archer.y + ArcherSize.y &&
-                SkeleArrow.y + SkeleArrowSize.y > Archer.y) {
+            float angle = atan2f(SkeleArrowVel[k].y, SkeleArrowVel[k].x);
+
+            //Calculate the position and size of the ArrowHitboxPos hitbox
+            olc::vf2d ArrowHitboxPos = SkeleArrowPos[k];
+            olc::vf2d ArrowHitboxSize = SkeleArrowSize;
+
+            //Apply rotation to the hitbox position
+            ArrowHitboxPos -= ArrowHitboxSize * 0.5f; //Center the hitbox
+            ArrowHitboxPos = RotatePoint(ArrowHitboxPos, SkeleArrowPos[k], angle);
+
+            //Apply rotation to the hitbox size
+            float maxDimension = std::max(ArrowHitboxSize.x, ArrowHitboxSize.y);
+            ArrowHitboxSize = { maxDimension, maxDimension };
+
+            if (ArrowHitboxPos.x < ArcherPos.x + ArcherSize.x &&
+                ArrowHitboxPos.x + ArrowHitboxSize.x > Archer.x &&
+                ArrowHitboxPos.y < Archer.y + ArcherSize.y &&
+                ArrowHitboxPos.y + ArrowHitboxSize.y > Archer.y) {
                 GameState = DEAD;
             }
         }
@@ -719,23 +807,23 @@ public:
     void DrawArrow(float fElapsedTime) {
         // Move and draw the arrows
         for (size_t i = 0; i < arrowPos.size(); i++) {
-            //arrowPos[i] += arrowVel[i] * fElapsedTime;
+            arrowPos[i] += arrowVel[i] * fElapsedTime;
 
-            // Check if arrow is off-screen
+            // Check if ArrowHitBoxPos is off-screen
             if (arrowPos[i].x < 0 || arrowPos[i].x >= ScreenWidth() || arrowPos[i].y < 0 || arrowPos[i].y >= ScreenHeight()) {
-                // Remove the arrow
+                // Remove the ArrowHitBoxPos
                 arrowPos.erase(arrowPos.begin() + i);
                 arrowVel.erase(arrowVel.begin() + i);
                 i--;
             }
             else {
-                // Calculate the angle of rotation based on the arrow's velocity
+                // Calculate the angle of rotation based on the ArrowHitBoxPos's velocity
                 float angle = atan2f(arrowVel[i].y, arrowVel[i].x);
 
-                // Draw the rotated arrow
+                // Draw the rotated ArrowHitBoxPos
                 DrawRotatedDecal(arrowPos[i], PumpkinArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
 
-                //Arrow+Goop Check
+                //ArrowHitBoxPos+Goop Check
                 ArrowEnemyCheck();
             }
         }
@@ -747,10 +835,10 @@ public:
             olc::vf2d targetPos = { (float)GetMouseX(), (float)GetMouseY() };
 
             // Calculate velocity towards the target
-            olc::vf2d vel = (targetPos - olc::vf2d(ArcherPos)).norm() * 500.0f;
+            olc::vf2d vel = (targetPos - olc::vf2d(ArcherPos)).norm() * 400.0f;
 
 
-            // Store the arrow's position and velocity
+            // Store the ArrowHitBoxPos's position and velocity
             arrowPos.push_back({ ArcherPos.x + 32, ArcherPos.y + 32 });
             arrowVel.push_back(vel);
         }
@@ -760,14 +848,14 @@ public:
         float angleIncrement = 360.0f / 12.0f; // Divide 360 degrees into 12 directions
 
         for (int i = 0; i < 12; i++) {
-            // Calculate the direction vector for each arrow
+            // Calculate the direction vector for each ArrowHitBoxPos
             float angle = i * angleIncrement;
             olc::vf2d direction = { cosf(M_PI * angle / 180.0f), sinf(M_PI * angle / 180.0f) };
 
-            // Calculate the velocity of the arrow
-            olc::vf2d vel = direction * 500.0f;
+            // Calculate the velocity of the ArrowHitBoxPos
+            olc::vf2d vel = direction * 400.0f;
 
-            // Store the arrow's position and velocity
+            // Store the ArrowHitBoxPos's position and velocity
             arrowPos.push_back({ ArcherPos.x + 15, ArcherPos.y + 15 });
             arrowVel.push_back(vel);
         }
@@ -888,8 +976,8 @@ public:
         DrawStringDecal({ (float)ScreenWidth() / 2 + 56, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
         if (Wave == 6) {
-            DrawStringDecal({ (float)ScreenWidth() / 5 - 14, (float)ScreenHeight() / 2 + 3 }, "Unlocked arrow ring!", olc::BLACK, { 4.0f, 4.0f });
-            DrawStringDecal({ (float)ScreenWidth() / 5 - 10, (float)ScreenHeight() / 2 }, "Unlocked arrow ring!", olc::WHITE, { 4.0f, 4.0f });
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 14, (float)ScreenHeight() / 2 + 3 }, "Unlocked ArrowHitBoxPos ring!", olc::BLACK, { 4.0f, 4.0f });
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 10, (float)ScreenHeight() / 2 }, "Unlocked ArrowHitBoxPos ring!", olc::WHITE, { 4.0f, 4.0f });
         }
     }
     //UI/Graphics
@@ -1173,7 +1261,7 @@ private:
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRightPumpkin.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeftPumpkin.png");
         PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
-        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
+        ArrowHitBoxPos = std::make_unique<olc::Sprite>("./Sprites/ArrowHitBoxPos.png");
         //Decals
         LeavesTestDecal = new olc::Decal(LeavesTest.get());
         PoisonSplatterDecal = new olc::Decal(PoisonSplatter.get());
@@ -1203,7 +1291,7 @@ private:
         ArcherLeftDecal = new olc::Decal(ArcherLeft.get());
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
         PumpkinArrowDecal = new olc::Decal(PumpkinArrow.get());
-        ArrowDecal = new olc::Decal(Arrow.get());
+        ArrowDecal = new olc::Decal(ArrowHitBoxPos.get());
         return true;
     }
 };
