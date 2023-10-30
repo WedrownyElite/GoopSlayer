@@ -225,7 +225,6 @@ public:
     void MoveSkeleton(float SkeletonSpeed, float fElapsedTime) {
         //Iterates through all Skeletons
         for (int k = 0; k < SkelePos.size(); k++) {
-            SkelePos[k] = { 300.0f, 300.0f };
             // Calculate direction towards the player
             olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[k]);
 
@@ -247,17 +246,16 @@ public:
             }
             // Draw the Skeleton
             if (dir.x < 0) {
-                FillRectDecal({ SkelePos[k].x + 15, SkelePos[k].y + 5 }, { 39.0f, 59.0f }, olc::BLACK);
                 DrawDecal({ SkelePos[k] }, SkeletonLeftDecal, { 2.0f, 2.0f });
             }
             if (dir.x > 0) {
-                FillRectDecal({ SkelePos[k].x + 15, SkelePos[k].y + 5 }, { 39.0f, 59.0f }, olc::BLACK);
                 DrawDecal({ SkelePos[k] }, SkeletonRightDecal, { 2.0f, 2.0f });
             }
         }
     }
     void MoveGoop(float GoopSpeed, float fElapsedTime) {
         for (int k = 0; k < GoopPos.size(); k++) {
+            GoopPos[k] = { 800.0f, 800.0f };
             // Calculate direction towards the player
             olc::vf2d dir = (ArcherPos - GoopPos[k]);
             float distance = dir.mag();
@@ -268,7 +266,7 @@ public:
 
             if (ChargeTimerBool[k] == 0) {
                 // Calculate the new position based on direction and speed
-                GoopPos[k] += dir.norm() * GoopSpeed;
+                //GoopPos[k] += dir.norm() * GoopSpeed;
                 // Draw the Goop
                 if (dir.x < 0) {
                     DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
@@ -317,7 +315,7 @@ public:
             //If PoisonGoop is outside 200 pixel range of user (add 5f to stop vibrating)
             if (distance > 305.0f) {
                 //Calc new position
-                PoisonGoopPos[k] += dir.norm() * PoisonGoopSpeed;
+                //PoisonGoopPos[k] += dir.norm() * PoisonGoopSpeed;
                 PoisonBallShootBool[k] = 0;
             }
             if (distance <= 325.0f) {
@@ -326,9 +324,11 @@ public:
 
             // Draw the PoisonGoop
             if (dir.x < 0) {
+                FillRectDecal({ PoisonGoopPos[k].x + 3, PoisonGoopPos[k].y + 5 }, { 48.0f, 60.0f }, olc::BLACK);
                 DrawDecal({ PoisonGoopPos[k] }, PoisonGoopLeftDecal, { 2.0f, 2.0f });
             }
             if (dir.x > 0) {
+                FillRectDecal({ PoisonGoopPos[k].x + 12, PoisonGoopPos[k].y + 5 }, { 48.0f, 60.0f }, olc::BLACK);
                 DrawDecal({ PoisonGoopPos[k] }, PoisonGoopRightDecal, { 2.0f, 2.0f });
             }
         }
@@ -439,7 +439,7 @@ public:
         SpawnPoisonGoop();
         MoveGoop(GoopSpeed, fElapsedTime);
         MoveSkeleton(SkeletonSpeed, fElapsedTime);
-        //SkeletonShoot(fElapsedTime);
+        SkeletonShoot(fElapsedTime);
         MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
         //PoisonBallShoot(fElapsedTime);
     }
@@ -450,53 +450,119 @@ public:
             olc::vi2d ArrowSize(30, 30);
             //Checks if arrows hit any goops
             for (int o = 0; o < GoopPos.size(); o++) {
-                olc::vf2d Goop({ GoopPos[o].x + 5, GoopPos[o].y + 5 });
-                olc::vf2d GoopSize(56.0f, 60.0f);
+                olc::vf2d dir = (ArcherPos - GoopPos[o]);
 
-                if (Arrow.x < Goop.x + GoopSize.x &&
-                    Arrow.x + ArrowSize.x > Goop.x &&
-                    Arrow.y < Goop.y + GoopSize.y &&
-                    Arrow.y + ArrowSize.y > Goop.y) {
-                    arrowPos.erase(arrowPos.begin() + k);
-                    arrowVel.erase(arrowVel.begin() + k);
-                    GoopPos.erase(GoopPos.begin() + o);
-                    score++;
-                    KilledGoops++;
+                //Goop facing left hitbox
+                if (dir.x < 0) {
+                    olc::vf2d Goop({ GoopPos[o].x + 1, GoopPos[o].y + 6 });
+                    olc::vf2d GoopSize(60.0f, 56.0f);
+
+                    if (Arrow.x < Goop.x + GoopSize.x &&
+                        Arrow.x + ArrowSize.x > Goop.x &&
+                        Arrow.y < Goop.y + GoopSize.y &&
+                        Arrow.y + ArrowSize.y > Goop.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        GoopPos.erase(GoopPos.begin() + o);
+                        score++;
+                        KilledGoops++;
+                    }
+                }
+                //Goop facing right hitbox
+                if (dir.x > 0) {
+                    olc::vf2d Goop({ GoopPos[o].x + 3, GoopPos[o].y + 6 });
+                    olc::vf2d GoopSize(60.0f, 56.0f);
+
+                    if (Arrow.x < Goop.x + GoopSize.x &&
+                        Arrow.x + ArrowSize.x > Goop.x &&
+                        Arrow.y < Goop.y + GoopSize.y &&
+                        Arrow.y + ArrowSize.y > Goop.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        GoopPos.erase(GoopPos.begin() + o);
+                        score++;
+                        KilledGoops++;
+                    }
                 }
             }
             //Checks if arrows hit any skeletons
             for (int o = 0; o < SkelePos.size(); o++) {
-                olc::vi2d Skeleton(SkelePos[o]);
-                olc::vi2d SkeleSize(63, 63);
+                olc::vf2d dir = olc::vf2d(ArcherPos - SkelePos[o]);
+                //Skele facing left hitbox
+                if (dir.x < 0) {
+                    olc::vf2d Skeleton(SkelePos[o].x + 10, SkelePos[o].y + 5);
+                    olc::vf2d SkeleSize(39.0f, 59.0f);
 
-                if (Arrow.x < Skeleton.x + SkeleSize.y &&
-                    Arrow.x + ArrowSize.x > Skeleton.x &&
-                    Arrow.y < Skeleton.y + SkeleSize.y &&
-                    Arrow.y + ArrowSize.y > Skeleton.y) {
-                    arrowPos.erase(arrowPos.begin() + k);
-                    arrowVel.erase(arrowVel.begin() + k);
-                    SkelePos.erase(SkelePos.begin() + o);
-                    SkeleShoot.erase(SkeleShoot.begin() + o);
-                    SkeleShootTimer.erase(SkeleShootTimer.begin() + o);
-                    score++;
-                    KilledSkeles++;
+                    if (Arrow.x < Skeleton.x + SkeleSize.y &&
+                        Arrow.x + ArrowSize.x > Skeleton.x &&
+                        Arrow.y < Skeleton.y + SkeleSize.y &&
+                        Arrow.y + ArrowSize.y > Skeleton.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        SkelePos.erase(SkelePos.begin() + o);
+                        SkeleShoot.erase(SkeleShoot.begin() + o);
+                        SkeleShootTimer.erase(SkeleShootTimer.begin() + o);
+                        score++;
+                        KilledSkeles++;
+                    }
                 }
+                //Skele facing right hitbox
+                if (dir.x > 0) {
+                    olc::vf2d Skeleton(SkelePos[o].x + 15, SkelePos[o].y + 5);
+                    olc::vf2d SkeleSize( 39.0f, 59.0f );
+
+                    if (Arrow.x < Skeleton.x + SkeleSize.y &&
+                        Arrow.x + ArrowSize.x > Skeleton.x &&
+                        Arrow.y < Skeleton.y + SkeleSize.y &&
+                        Arrow.y + ArrowSize.y > Skeleton.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        SkelePos.erase(SkelePos.begin() + o);
+                        SkeleShoot.erase(SkeleShoot.begin() + o);
+                        SkeleShootTimer.erase(SkeleShootTimer.begin() + o);
+                        score++;
+                        KilledSkeles++;
+                    }
+                }
+
             }
             //If arrow hit Poison Goop
             for (int o = 0; o < PoisonGoopPos.size(); o++) {
-                olc::vi2d PoisonGoop(PoisonGoopPos[o]);
-                olc::vi2d PoisonSize(63, 63);
+                olc::vf2d dir = (ArcherPos - PoisonGoopPos[o]);
 
-                if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
-                    Arrow.x + ArrowSize.x > PoisonGoop.x &&
-                    Arrow.y < PoisonGoop.y + PoisonSize.y &&
-                    Arrow.y + ArrowSize.y > PoisonGoop.y) {
-                    arrowPos.erase(arrowPos.begin() + k);
-                    arrowVel.erase(arrowVel.begin() + k);
-                    PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
-                    PoisonBallShootBool.erase(PoisonBallShootBool.begin() + o);
-                    score++;
-                    KilledPoison++;
+                //PoisonGoop facing left hitbox
+                if (dir.x < 0) {
+                    olc::vf2d PoisonGoop(PoisonGoopPos[o].x + 3, PoisonGoopPos[o].y + 5);
+                    olc::vf2d PoisonSize(48.0f, 60.0f);
+
+                    if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
+                        Arrow.x + ArrowSize.x > PoisonGoop.x &&
+                        Arrow.y < PoisonGoop.y + PoisonSize.y &&
+                        Arrow.y + ArrowSize.y > PoisonGoop.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
+                        PoisonBallShootBool.erase(PoisonBallShootBool.begin() + o);
+                        score++;
+                        KilledPoison++;
+                    }
+                }
+                //PoisonGoop facing right hitbox
+                if (dir.x > 0) {
+                    olc::vf2d PoisonGoop(PoisonGoopPos[o].x + 12, PoisonGoopPos[o].y + 5);
+                    olc::vf2d PoisonSize(48.0f, 60.0f);
+
+                    if (Arrow.x < PoisonGoop.x + PoisonSize.y &&
+                        Arrow.x + ArrowSize.x > PoisonGoop.x &&
+                        Arrow.y < PoisonGoop.y + PoisonSize.y &&
+                        Arrow.y + ArrowSize.y > PoisonGoop.y) {
+                        arrowPos.erase(arrowPos.begin() + k);
+                        arrowVel.erase(arrowVel.begin() + k);
+                        PoisonGoopPos.erase(PoisonGoopPos.begin() + o);
+                        PoisonBallShootBool.erase(PoisonBallShootBool.begin() + o);
+                        score++;
+                        KilledPoison++;
+                    }
                 }
             }
         }
@@ -549,15 +615,16 @@ public:
         KilledGoops = 0;
         KilledSkeles = 0;
         KilledPoison = 0;
-        MaxEnemies[0] = 0;
-        MaxEnemies[1] = 1;
+        MaxEnemies[0] = 1;
+        MaxEnemies[1] = 0;
         MaxEnemies[2] = 0;
-        TotalEnemies[0] = 0;
-        TotalEnemies[1] = 1;
+        TotalEnemies[0] = 1;
+        TotalEnemies[1] = 0;
         TotalEnemies[2] = 0;
         WaveDisplay = true;
         SkillCooldownTimer = 0;
         SkillUsed = false;
+        arrowPos.push_back({ 300.0f, 300.0f });
     }
     void DeadUserInputs() {
         if (GetKey(olc::Key::SPACE).bPressed) {
@@ -652,7 +719,7 @@ public:
     void DrawArrow(float fElapsedTime) {
         // Move and draw the arrows
         for (size_t i = 0; i < arrowPos.size(); i++) {
-            arrowPos[i] += arrowVel[i] * fElapsedTime;
+            //arrowPos[i] += arrowVel[i] * fElapsedTime;
 
             // Check if arrow is off-screen
             if (arrowPos[i].x < 0 || arrowPos[i].x >= ScreenWidth() || arrowPos[i].y < 0 || arrowPos[i].y >= ScreenHeight()) {
