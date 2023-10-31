@@ -1317,7 +1317,7 @@ private:
         PoisonBallRight = std::make_unique<olc::Sprite>("./Sprites/PoisonBallRight.png");
         SkeletonLeft = std::make_unique<olc::Sprite>("./Sprites/SkeletonLeft.png");
         SkeletonRight = std::make_unique<olc::Sprite>("./Sprites/SkeletonRight.png");
-        Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight1.png");
+        Flashlight = std::make_unique <olc::Sprite>("./Sprites/Flashlight.png");
         MenuBackground = std::make_unique<olc::Sprite>("./Sprites/AtticFinal.png");
         Quit = std::make_unique<olc::Sprite>("./Sprites/Quit.png");
         Play = std::make_unique<olc::Sprite>("./Sprites/Play.png");
