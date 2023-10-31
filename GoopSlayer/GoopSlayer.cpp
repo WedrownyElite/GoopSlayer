@@ -1373,7 +1373,6 @@ private:
 };
 
 int main() {
-    bool WindowedMode = false;
     int ModeInt = 0;
     while (true) {
         std::cout << "1: Windowed Mode" << "\n";
