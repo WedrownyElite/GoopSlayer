@@ -703,7 +703,7 @@ public:
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
         score = 0;
-        Wave = 1;
+        Wave = 10;
         Time = 0;
         KilledGoops = 0;
         KilledSkeles = 0;
@@ -1074,9 +1074,9 @@ public:
         DrawStringDecal({ (float)ScreenWidth() / 2 - 130, (float)ScreenHeight() / 3 }, "Wave", olc::WHITE, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 64, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
-        if (Wave == 6) {
-            DrawStringDecal({ (float)ScreenWidth() / 5 - 14, (float)ScreenHeight() / 2 + 3 }, "Unlocked ArrowHitBoxPos ring!", olc::BLACK, { 4.0f, 4.0f });
-            DrawStringDecal({ (float)ScreenWidth() / 5 - 10, (float)ScreenHeight() / 2 }, "Unlocked ArrowHitBoxPos ring!", olc::WHITE, { 4.0f, 4.0f });
+        if (Wave == 10) {
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 6, (float)ScreenHeight() / 2 + 3 }, "Unlocked Arrow ring!", olc::BLACK, { 4.0f, 4.0f });
+            DrawStringDecal({ (float)ScreenWidth() / 5 - 10, (float)ScreenHeight() / 2 }, "Unlocked Arrow ring!", olc::WHITE, { 4.0f, 4.0f });
         }
     }
     //UI/Graphics
@@ -1263,7 +1263,7 @@ public:
         if (Time >= 1.0f && WaveDisplay == false) {
             //Spawn/Move Enemies
             MoveEnemies(PoisonGoopSpeed, GoopSpeed, SkeletonSpeed, fElapsedTime);
-            PlayerDeadCheck();
+            //PlayerDeadCheck();
         }
         if (Wave >= 10) {
             DrawSkillUI(fElapsedTime);
