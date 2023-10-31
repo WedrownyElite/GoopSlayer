@@ -703,7 +703,7 @@ public:
         ArcherPos.x = 448.0f;
         ArcherPos.y = 238.0f;
         score = 0;
-        Wave = 10;
+        Wave = 1;
         Time = 0;
         KilledGoops = 0;
         KilledSkeles = 0;
@@ -1084,6 +1084,7 @@ public:
         float FlashlightX = GetMouseX();
         float FlashlightY = GetMouseY();
         DrawDecal({ 0.0f, 0.0f }, MenuBackgroundDecal, { 1.0f, 1.0f });
+        DrawStringDecal({ 800.0f, 540.0f }, "Press 'V' in game lol", olc::WHITE, { 1.0f, 1.0f });
         DrawDecal({ FlashlightX - 128, FlashlightY - 128 }, FlashlightDecal, { 4.0f, 4.0f });
         FillRectDecal({ 0.0f, 0.0f }, { 1024.0f, (float)FlashlightY - 128 }, olc::BLACK);
         FillRectDecal({ 0.0f, 0.0f }, { (float)FlashlightX - 128, 576 }, olc::BLACK);
@@ -1136,6 +1137,7 @@ public:
     void DrawSkillUI(float fElapsedTime) {
         DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, SkillUIDecal, { 2.0f, 2.0f });
         DrawDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 }, ArrowBarrageDecal, { 2.0f, 2.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 - 21, (float)ScreenHeight() - 25 }, "'E'", olc::WHITE, { 2.0f, 2.0f });
         if (SkillUsed == true) {
             if (CooldownNum < 64.0f) {
                 DrawPartialDecal({ (float)ScreenWidth() / 2 - 32, (float)ScreenHeight() - 80 + CooldownNum },
