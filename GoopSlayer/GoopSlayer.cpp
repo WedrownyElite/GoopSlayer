@@ -8,6 +8,7 @@
 class GoopSlayer : public olc::PixelGameEngine {
 public:
     //Sprites
+    std::unique_ptr<olc::Sprite> Poop;
     std::unique_ptr<olc::Sprite> LeavesTest;
     std::unique_ptr<olc::Sprite> SkeletonLeft;
     std::unique_ptr<olc::Sprite> SkeletonRight;
@@ -38,6 +39,7 @@ public:
     std::unique_ptr<olc::Sprite> PumpkinArrow;
     std::unique_ptr<olc::Sprite> ArrowHitBoxPos;
     //Decals
+    olc::Decal* PoopDecal;
     olc::Decal* LeavesTestDecal;
     olc::Decal* SkeletonLeftDecal;
     olc::Decal* SkeletonRightDecal;
@@ -113,10 +115,10 @@ public:
     //Menu variables
     int score = 0;
     int menu = 0;
-    enum GameStateEnum { MENU, DEAD, GAME, PAUSE, QUIT, DEBUG };
+    enum GameStateEnum { MENU, DEAD, GAME, QUIT };
     GameStateEnum GameState = MENU;
     //Wave variables
-    //MaxEnemies/TotalEnemies [0] = Goop, [1] = Skeleton, [2] = PoisonGoop
+    //MaxEnemies/TotalEnemies [0] = Goop, [1] = Skeleton, [2] = PoisonGoop [3] = 2nd PoisonGoopd
     std::vector<int> MaxEnemies;
     std::vector<int> TotalEnemies;
     int Wave = 1;
@@ -127,25 +129,31 @@ public:
     bool SkillUsed = false;
     float CooldownNum = 0;
     float SkillCooldownTimer = 0;
+    //Poop variables
+    std::vector<olc::vf2d> PoopPos;
+    std::vector<int> PoopBool;
+    std::vector<float> PoopTimer;
+    bool CanPoopBool = true;
+    float CanPoopTimer = 0;
 
     GoopSlayer() {
         sAppName = "GoopSlayer";
     }
     //Math shit EW
-    // Function to rotate a point around another point by a given angle
+    //Function to rotate a point around another point by a given angle
     olc::vf2d RotatePoint(const olc::vf2d& point, const olc::vf2d& center, float angle) {
         float s = sin(angle);
         float c = cos(angle);
 
-        // Translate point back to the origin
+        //Translate point back to the origin
         olc::vf2d translated = point - center;
 
-        // Rotate point
+        //Rotate point
         olc::vf2d rotated;
         rotated.x = translated.x * c - translated.y * s;
         rotated.y = translated.x * s + translated.y * c;
 
-        // Translate point back
+        //Translate point back
         return rotated + center;
     }
     //Enemies
@@ -276,11 +284,11 @@ public:
             olc::vf2d dir = (ArcherPos - GoopPos[k]);
             float distance = dir.mag();
             //If within 200 pixels, start charging
-            //if (distance <= 100.0f && CanCharge[k] == 1) {
-                //ChargeTimerBool[k] = 1;
-            //}
+            if (distance <= 200.0f && CanCharge[k] == 1) {
+                ChargeTimerBool[k] = 1;
+            }
 
-            //if (ChargeTimerBool[k] == 0) {
+            if ((ChargeTimerBool[k] == 0 && CanCharge[k] == 1) || ChargeCooldownBool[k] == 1) {
                 // Calculate the new position based on direction and speed
                 GoopPos[k] += dir.norm() * GoopSpeed;
                 // Draw the Goop
@@ -290,28 +298,50 @@ public:
                 if (dir.x > 0) {
                     DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
                 }
-            //}
+            }
         }
     }
     void doChargeGoop(float GoopSpeed, float fElapsedTime) {
         for (int k = 0; k < ChargeTimerBool.size(); k++) {
+            // Calculate direction towards the player
+            olc::vf2d distance = (ArcherPos - GoopPos[k]);
+            //Speeds
+            float ChargeGoopSpeed;
+            float BoostedGoopSpeed;
+            if (Wave < 25) {
+                ChargeGoopSpeed = 60 * fElapsedTime;
+                BoostedGoopSpeed = 400 * fElapsedTime;
+            }
+            if (Wave >= 25) {
+                ChargeGoopSpeed = 40 * fElapsedTime;
+                BoostedGoopSpeed = 600 * fElapsedTime;
+            }
+            //Charging
             if (ChargeTimerBool[k] == 1) {
-                // Calculate direction towards the player
-                olc::vf2d distance = (ArcherPos - GoopPos[k]);
-                float ChargeGoopSpeed = 80 * fElapsedTime;
-                float BoostedGoopSpeed = 400 * fElapsedTime;
 
-                // Calculate the new position based on direction and speed
+                //Calculate the new position based on direction and speed
                 //Charge back
-                if (ChargeTimer[k] < 5.0f && CanCharge[k] == 1) {
-                    GoopPos[k] -= distance * ChargeGoopSpeed;
+                if (ChargeTimer[k] < 2.5f && ChargeTimerBool[k] == 1) {
+                    GoopPos[k] -= distance.norm() * ChargeGoopSpeed;
                 }
+                if (ChargeTimer[k] >= 2.5f) {
+                    ChargingTimerBool[k] = 1;
+                    ChargeTimerBool[k] = 0;
+                }
+            }
+            //Charging into player
+            if (ChargingTimerBool[k] == 1) {
                 //Charging into player
-                if (ChargeTimer[k] >= 5.0f && ChargingTimerBool[k] == 0 && ChargingTimer[k] < 2.0f && CanCharge[k] == 1) {
-                    GoopPos[k] += distance * BoostedGoopSpeed;
+                if (ChargingTimer[k] == 0.0f) {
+                    ChargeTimerBool[k] = 0;
+                    ChargeTimer[k] = 0;
+                    CanCharge[k] = 0;
                 }
-                //When done charging (2 seconds) charge cooldown started
-                if (ChargingTimer[k] >= 2.0f) {
+                if (ChargingTimerBool[k] == 1 && ChargingTimer[k] < 1.5f) {
+                    GoopPos[k] += distance.norm() * BoostedGoopSpeed;
+                }
+                //When done charging (1.5 seconds) charge cooldown started
+                if (ChargingTimer[k] >= 1.5f) {
                     ChargeCooldownBool[k] = 1;
                     ChargeTimerBool[k] = 0;
                     ChargeTimer[k] = 0;
@@ -319,6 +349,20 @@ public:
                     ChargingTimerBool[k] = 0;
                     CanCharge[k] = 0;
                 }
+            }
+            //Cooldown checker
+            if (ChargeCooldownTimer[k] >= 6.0f && ChargeCooldownBool[k] == 1) {
+                ChargeCooldownBool[k] = 0;
+                ChargeCooldownTimer[k] = 0;
+                CanCharge[k] = 1;
+            }
+
+            // Draw the Goop
+            if (distance.x < 0) {
+                DrawDecal({ GoopPos[k] }, GoopLeftDecal, { 2.0f, 2.0f });
+            }
+            if (distance.x > 0) {
+                DrawDecal({ GoopPos[k] }, GoopRightDecal, { 2.0f, 2.0f });
             }
         }
     }
@@ -331,7 +375,7 @@ public:
             //If PoisonGoop is outside 200 pixel range of user (add 5f to stop vibrating)
             if (distance > 305.0f) {
                 //Calc new position
-                //PoisonGoopPos[k] += dir.norm() * PoisonGoopSpeed;
+                PoisonGoopPos[k] += dir.norm() * PoisonGoopSpeed;
                 PoisonBallShootBool[k] = 0;
             }
             if (distance <= 325.0f) {
@@ -340,11 +384,9 @@ public:
 
             // Draw the PoisonGoop
             if (dir.x < 0) {
-                FillRectDecal({ PoisonGoopPos[k].x + 3, PoisonGoopPos[k].y + 5 }, { 48.0f, 60.0f }, olc::BLACK);
                 DrawDecal({ PoisonGoopPos[k] }, PoisonGoopLeftDecal, { 2.0f, 2.0f });
             }
-            if (dir.x > 0) {
-                FillRectDecal({ PoisonGoopPos[k].x + 12, PoisonGoopPos[k].y + 5 }, { 48.0f, 60.0f }, olc::BLACK);
+            else {
                 DrawDecal({ PoisonGoopPos[k] }, PoisonGoopRightDecal, { 2.0f, 2.0f });
             }
         }
@@ -423,7 +465,7 @@ public:
                 olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
 
                 // Calculate velocity towards the target
-                olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(PoisonGoopPos[k])).norm() * 400.0f;
+                olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(PoisonGoopPos[k])).norm() * 300.0f;
 
                 // Store the ArrowHitBoxPos's position and velocity
                 PoisonBallPos.push_back({ PoisonGoopPos[k].x + 24, PoisonGoopPos[k].y + 24 });
@@ -454,10 +496,11 @@ public:
         SpawnSkeleton();
         SpawnPoisonGoop();
         MoveGoop(GoopSpeed, fElapsedTime);
+        doChargeGoop(GoopSpeed, fElapsedTime);
         MoveSkeleton(SkeletonSpeed, fElapsedTime);
         SkeletonShoot(fElapsedTime);
         MovePoisonGoop(PoisonGoopSpeed, fElapsedTime);
-        //PoisonBallShoot(fElapsedTime);
+        PoisonBallShoot(fElapsedTime);
     }
     void ArrowEnemyCheck() {
         //Iterates through all arrows
@@ -495,6 +538,12 @@ public:
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         GoopPos.erase(GoopPos.begin() + o);
+                        ChargeCooldownBool.erase(ChargeCooldownBool.begin() + o);
+                        ChargingTimer.erase(ChargingTimer.begin() + o);
+                        ChargingTimerBool.erase(ChargingTimerBool.begin() + o);
+                        ChargeTimerBool.erase(ChargeTimerBool.begin() + o);
+                        ChargeTimer.erase(ChargeTimer.begin() + o);
+                        CanCharge.erase(CanCharge.begin() + o);
                         score++;
                         KilledGoops++;
                     }
@@ -511,6 +560,12 @@ public:
                         arrowPos.erase(arrowPos.begin() + k);
                         arrowVel.erase(arrowVel.begin() + k);
                         GoopPos.erase(GoopPos.begin() + o);
+                        ChargeCooldownBool.erase(ChargeCooldownBool.begin() + o);
+                        ChargingTimer.erase(ChargingTimer.begin() + o);
+                        ChargingTimerBool.erase(ChargingTimerBool.begin() + o);
+                        ChargeTimerBool.erase(ChargeTimerBool.begin() + o);
+                        ChargeTimer.erase(ChargeTimer.begin() + o);
+                        CanCharge.erase(CanCharge.begin() + o);
                         score++;
                         KilledGoops++;
                     }
@@ -600,6 +655,13 @@ public:
     }
     //Player
     void ResetVariables() {
+        //Remove poops
+        PoopPos.clear();
+        PoopTimer.clear();
+        PoopBool.clear();
+        CanPoopTimer = 0;
+        CanPoopBool = true;
+
         //Remove poison goops
         PoisonGoopPos.clear();
         PoisonBallShootBool.clear();
@@ -665,21 +727,29 @@ public:
         }
     }
     void ArcherDead() {
+        DrawGrass();
+        DrawSpiderwebs();
         std::string ScoreString = std::to_string(score);
-        DrawString(ScreenWidth() / 5, ScreenHeight() / 9, "You've been slain!", olc::MAGENTA, 4);
-        DrawString(ScreenWidth() / 3 + 70, ScreenHeight() / 4, "Score:", olc::GREEN, 4);
-        DrawString(ScreenWidth() / 3 + 130, ScreenHeight() / 3, ScoreString, olc::GREEN, 4);
-        DrawString(ScreenWidth() / 7, ScreenHeight() / 2, "Press 'SPACE' to retry", olc::BLUE, 4);
+        DrawStringDecal({ (float)ScreenWidth() / 7 + 4, (float)ScreenHeight() / 5 + 3 }, "You've been slain!", olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 7, (float)ScreenHeight() / 5 }, "You've been slain!", olc::RED, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 3 + 64, (float)ScreenHeight() / 2 - 37 }, "Score", olc::BLACK, { 4.0f, 4.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 3 + 60, (float)ScreenHeight() / 2 - 40}, "Score:", olc::GREEN, { 4.0f, 4.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 3 + 134, (float)ScreenHeight() / 2 + 13 }, ScoreString, olc::BLACK, { 4.0f, 4.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 3 + 130, (float)ScreenHeight() / 2 + 10 }, ScoreString, olc::GREEN, { 4.0f, 4.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 7 + 4, (float)ScreenHeight() / 2 + 107 }, "Press 'SPACE' to retry", olc::BLACK, {4.0f, 4.0f});
+        DrawStringDecal({ (float)ScreenWidth() / 7, (float)ScreenHeight() / 2 + 105 }, "Press 'SPACE' to retry", olc::WHITE, { 4.0f, 4.0f });
     }
     void PlayerDeadCheck() {
         //Archer variables
         olc::vf2d Archer;
         olc::vf2d ArcherSize;
+        //Archer facing right
         if (ArcherDir == true) {
             Archer = { ArcherPos.x + 14.0f, ArcherPos.y + 6.0f };
             ArcherSize = { 44.0f, 58.0f };
         }
-        else if (ArcherDir == false) {  
+        //Archer facing left
+        else {  
             Archer = { ArcherPos.x + 6.0f, ArcherPos.y + 6.0f };
             ArcherSize = { 44.0f, 58.0f };
         }
@@ -688,11 +758,11 @@ public:
             olc::vf2d dir = (ArcherPos - GoopPos[k]);
 
             //Goop facing left hitbox
-            if (dir.x < 0) {
+            if (dir.x > 0) {
                 olc::vf2d Goop({ GoopPos[k].x + 1, GoopPos[k].y + 6 });
                 olc::vf2d GoopSize(60.0f, 56.0f);
 
-                if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                if (Goop.x < Archer.x + ArcherSize.x &&
                     Goop.x + GoopSize.x > Archer.x &&
                     Goop.y < Archer.y + ArcherSize.y &&
                     Goop.y + GoopSize.y > Archer.y) {
@@ -700,11 +770,11 @@ public:
                 }
             }
             //Goop facing right hitbox
-            if (dir.x < 0) {
+            else {
                 olc::vf2d Goop({ GoopPos[k].x + 3, GoopPos[k].y + 6 });
                 olc::vf2d GoopSize(60.0f, 56.0f);
 
-                if (Goop.x < ArcherPos.x + ArcherSize.x &&
+                if (Goop.x < Archer.x + ArcherSize.x &&
                     Goop.x + GoopSize.x > Archer.x &&
                     Goop.y < Archer.y + ArcherSize.y &&
                     Goop.y + GoopSize.y > Archer.y) {
@@ -725,7 +795,7 @@ public:
                 olc::vf2d PoisonGoop(PoisonGoopPos[k].x + 3, PoisonGoopPos[k].y + 5);
                 olc::vf2d PoisonSize(48.0f, 60.0f);
 
-                if (Poison.x < ArcherPos.x + ArcherSize.x &&
+                if (Poison.x < Archer.x + ArcherSize.x &&
                     Poison.x + PoisonSize.x > Archer.x &&
                     Poison.y < Archer.y + ArcherSize.y &&
                     Poison.y + PoisonSize.y > Archer.y) {
@@ -733,11 +803,11 @@ public:
                 }
             }
             //PoisonGoop facing right hitbox
-            if (dir.x > 0) {
+            else {
                 olc::vf2d PoisonGoop(PoisonGoopPos[k].x + 12, PoisonGoopPos[k].y + 5);
                 olc::vf2d PoisonSize(48.0f, 60.0f);
 
-                if (Poison.x < ArcherPos.x + ArcherSize.x &&
+                if (Poison.x < Archer.x + ArcherSize.x &&
                     Poison.x + PoisonSize.x > Archer.x &&
                     Poison.y < Archer.y + ArcherSize.y &&
                     Poison.y + PoisonSize.y > Archer.y) {
@@ -748,14 +818,30 @@ public:
         //Check if Poison balls hit player
         for (int k = 0; k < PoisonBallPos.size(); k++) {
             //Ball variables
-            olc::vi2d Ball(PoisonBallPos[k]);
-            olc::vi2d BallSize(32, 32);
+            olc::vf2d dir = (ArcherPos - PoisonBallPos[k]);
+            //PoisonBall facing left
+            if (dir.x < 0) {
+                olc::vf2d Ball(PoisonBallPos[k].x + 7, PoisonBallPos[k].y + 8);
+                olc::vf2d BallSize(20.0f, 17.0f);
 
-            if (Ball.x < ArcherPos.x + ArcherSize.x &&
-                Ball.x + BallSize.x > Archer.x &&
-                Ball.y < Archer.y + ArcherSize.y &&
-                Ball.y + BallSize.y > Archer.y) {
-                GameState = DEAD;
+                if (Ball.x < Archer.x + ArcherSize.x &&
+                    Ball.x + BallSize.x > Archer.x &&
+                    Ball.y < Archer.y + ArcherSize.y &&
+                    Ball.y + BallSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
+            }
+            //PoisonBall facing right
+            else {
+                olc::vf2d Ball(PoisonBallPos[k].x + 5, PoisonBallPos[k].y + 8);
+                olc::vf2d BallSize(30.0f, 17.0f);
+
+                if (Ball.x < Archer.x + ArcherSize.x &&
+                    Ball.x + BallSize.x > Archer.x &&
+                    Ball.y < Archer.y + ArcherSize.y &&
+                    Ball.y + BallSize.y > Archer.y) {
+                    GameState = DEAD;
+                }
             }
         }
         //Check if skeleton ArrowHitBoxPos hits player
@@ -778,7 +864,7 @@ public:
             float maxDimension = std::max(ArrowHitboxSize.x, ArrowHitboxSize.y);
             ArrowHitboxSize = { maxDimension, maxDimension };
 
-            if (ArrowHitboxPos.x < ArcherPos.x + ArcherSize.x &&
+            if (ArrowHitboxPos.x < Archer.x + ArcherSize.x &&
                 ArrowHitboxPos.x + ArrowHitboxSize.x > Archer.x &&
                 ArrowHitboxPos.y < Archer.y + ArcherSize.y &&
                 ArrowHitboxPos.y + ArrowHitboxSize.y > Archer.y) {
@@ -887,38 +973,28 @@ public:
         if (ArcherPos.y < -5) {
             ArcherPos.y = -4;
         }
-        if (GetKey(olc::Key::E).bPressed && SkillUsed == false && Wave >= 1) {
+        if (GetKey(olc::Key::E).bPressed && SkillUsed == false && Wave >= 10) {
             SpawnArrowRing(fElapsedTime);
             SkillUsed = true;
         }
         if (GetKey(olc::Key::ESCAPE).bPressed) {
             GameState = QUIT;
         }
+        if (GetKey(olc::Key::V).bPressed && CanPoopBool == true) {
+            PoopPos.push_back({ ArcherPos.x + 16, ArcherPos.y + 16 });
+            PoopBool.push_back(1);
+            PoopTimer.push_back(0);
+            CanPoopBool = false;
+        }
     }
     //Wave
-    void WaveCheckDebug() {
-        if (KilledGoops >= TotalEnemies[0] && KilledSkeles >= TotalEnemies[1] && KilledPoison >= TotalEnemies[2]) {
-            KilledGoops = 0;
-            TotalEnemies[2]++;
-            MaxEnemies[2]++;
-
-            Time = 0.0f;
-            for (int k = 0; k < SkeleArrowPos.size(); k++) {
-                SkeleArrowPos.erase(SkeleArrowPos.begin() + k);
-                SkeleArrowVel.erase(SkeleArrowVel.begin() + k);
-            }
-            WaveDisplay = true;
-            Wave++;
-            TotalEnemies[0] += 2;
-            WaveCounter[0]++;
-        }
-        if (WaveCounter[0] == 4 && MaxEnemies[0] < 4) {
-            MaxEnemies[0]++;
-            WaveCounter[0] = 0;
-        }
-    }
     void WaveCheck() {
-        if (KilledGoops >= TotalEnemies[0] && KilledSkeles >= TotalEnemies[1] && KilledPoison >= TotalEnemies[2]) {
+        if ((KilledGoops >= TotalEnemies[0] 
+            && KilledSkeles >= TotalEnemies[1] 
+            && KilledPoison >= TotalEnemies[2])
+            && (GoopPos.size() == 0 
+            && SkelePos.size() == 0 
+            && PoisonGoopPos.size() == 0)) {
             KilledGoops = 0;
             KilledSkeles = 0;
             KilledPoison = 0;
@@ -933,20 +1009,25 @@ public:
             PoisonSplashTimer.clear();
 
             WaveDisplay = true;
-            WaveCounter[0]++;
-            WaveCounter[1]++;
             Wave++;
             //Goop
+            //Increase max by one every 2 waves until Max == 6
             //Increase total by 2 every wave until Total == 16
-            if (TotalEnemies[0] < 4) {
+            if (MaxEnemies[0] < 6) {
+                WaveCounter[0]++;
+            }
+            if (TotalEnemies[0] < 16) {
                 TotalEnemies[0] += 2;
             }
+            if (WaveCounter[0] == 2) {
+                MaxEnemies[0]++;
+            }
             //Skeletons
-            //Increase max by one every 2 waves until Max ==  4
+            //Increase max by one every 3 waves until Max ==  5
             //Increase total by 1 every wave until Total == 14
             //Starting on Wave 3
             if (Wave >= 3) {
-                if (MaxEnemies[1] < 4) {
+                if (MaxEnemies[1] < 5) {
                     WaveCounter[1]++;
                 }
                 if (TotalEnemies[1] < 14) {
@@ -956,9 +1037,27 @@ public:
                     TotalEnemies[1]++;
                     MaxEnemies[1]++;
                 }
-                if (WaveCounter[1] == 2) {
+                if (WaveCounter[1] == 3) {
                     MaxEnemies[1]++;
                     WaveCounter[1] = 0;
+                }
+            }
+            //Poison Goops
+            //Increase max by one every 4 waves until Max == 4
+            //Increase total by 1 every 2 waves until Total == 10
+            //Starting on Wave 8
+            if (Wave >= 8) {
+                if (MaxEnemies[2] < 4) {
+                    WaveCounter[2]++;
+                    WaveCounter[3]++;
+                }
+                if (TotalEnemies[2] < 10 && WaveCounter[3] == 2) {
+                    TotalEnemies[2]++;
+                    WaveCounter[3] = 0;
+                }
+                if (WaveCounter[2] == 4) {
+                    MaxEnemies[2]++;
+                    WaveCounter[2] = 0;
                 }
             }
         }
@@ -971,9 +1070,9 @@ public:
     }
     void DisplayWave() {
         std::string WaveString = std::to_string(Wave);
-        DrawStringDecal({ (float)ScreenWidth() / 2 - 134, (float)ScreenHeight() / 3 + 3 }, "Wave", olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 - 126, (float)ScreenHeight() / 3 + 3 }, "Wave", olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 - 130, (float)ScreenHeight() / 3 }, "Wave", olc::WHITE, { 5.0f, 5.0f });
-        DrawStringDecal({ (float)ScreenWidth() / 2 + 56, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
+        DrawStringDecal({ (float)ScreenWidth() / 2 + 64, (float)ScreenHeight() / 3 + 3 }, WaveString, olc::BLACK, { 5.0f, 5.0f });
         DrawStringDecal({ (float)ScreenWidth() / 2 + 60, (float)ScreenHeight() / 3 }, WaveString, olc::WHITE, { 5.0f, 5.0f });
         if (Wave == 6) {
             DrawStringDecal({ (float)ScreenWidth() / 5 - 14, (float)ScreenHeight() / 2 + 3 }, "Unlocked ArrowHitBoxPos ring!", olc::BLACK, { 4.0f, 4.0f });
@@ -1010,12 +1109,6 @@ public:
         DrawDecal({ play_XCoord, play_YCoord }, PlayDecal, scale * play_zoom);
         DrawDecal({ quit_XCoord, quit_YCoord }, QuitDecal, scale * quit_zoom);
 
-        int MouseCoordX = GetMouseX();
-        int MouseCoordY = GetMouseY();
-        std::string MouseCoordXS = std::to_string(MouseCoordX);
-        std::string MouseCoordYS = std::to_string(MouseCoordY);
-        DrawStringDecal({ 5.0f, 5.0f }, MouseCoordXS, olc::WHITE, { 2.0f, 2.0f });
-        DrawStringDecal({ 5.0f, 20.0f }, MouseCoordYS, olc::WHITE, { 2.0f, 2.0f });
         if (GetMouseX() >= 440 && GetMouseY() >= 300 && GetMouseX() <= 570 && GetMouseY() <= 365 && (GetMouse(0).bPressed)) {
             ResetVariables();
             GameState = GAME;
@@ -1024,10 +1117,6 @@ public:
             WaveDisplay = false;
             GameState = QUIT;
         }
-        if (GetMouseX() >= 200 && GetMouseY() >= 105 && GetMouseX() <= 240 && GetMouseY() <= 130 && (GetMouse(0).bPressed)) {
-            ResetVariables();
-            GameState = DEBUG;
-        }
     }
     void DrawGrass() {
         for (int x = 0; x < 1024; x += 32) {
@@ -1035,6 +1124,8 @@ public:
                 DrawDecal({ (float)x, (float)y }, GrassDecal);
             }
         }
+        //Draw leaves
+        DrawDecal({ 0.0f, 0.0f }, LeavesTestDecal, { 1.0f, 1.0f });
     }
     void DrawSpiderwebs() {
         DrawDecal({ 960.0f, 515.0f }, Spiderweb2Decal, { 2.0f, 2.0f });
@@ -1057,15 +1148,39 @@ public:
             SkillUsed = false;
         }
     }
+    void PoopFunction() {
+        for (int k = 0; k < PoopBool.size(); k++) {
+            if (PoopTimer[k] < 5.0f) {
+                DrawDecal({ PoopPos[k] }, PoopDecal, { 1.0f, 1.0f });
+            }
+            else {
+                PoopPos.erase(PoopPos.begin() + k);
+                PoopTimer.erase(PoopTimer.begin() + k);
+                PoopBool.erase(PoopBool.begin() + k);
+            }
+        }
+    }
     //GameStates
     void GameGameState(float fElapsedTime) {
         fElapsedTime = std::min(fElapsedTime, 0.16667f);
         Clear(olc::BLACK);
         //Draw Grass
         DrawGrass();
-        //Draw leaves
-        DrawDecal({ 0.0f, 0.0f }, LeavesTestDecal, { 1.0f, 1.0f });
         //Timers
+        //Poop
+        if (CanPoopBool == false) {
+            CanPoopTimer += fElapsedTime;
+        }
+        if (CanPoopTimer >= 5.0f) {
+            CanPoopTimer = 0.0f;
+            CanPoopBool = true;
+        }
+        for (int k = 0; k < PoopBool.size(); k++) {
+            if (PoopBool[k] == 1) {
+                PoopTimer[k] += fElapsedTime;
+            }
+        }
+        PoopFunction();
         //Currently Charging Goop
         for (int k = 0; k < GoopPos.size(); k++) {
             if (ChargingTimerBool[k] == 1) {
@@ -1080,7 +1195,7 @@ public:
         }
         //Goop Charge
         for (int k = 0; k < GoopPos.size(); k++) {
-            if (ChargeTimer[k] == 1) {
+            if (ChargeTimerBool[k] == 1) {
                 ChargeTimer[k] += fElapsedTime;
             }
         }
@@ -1106,15 +1221,29 @@ public:
         if (ArcherSlowed == true) {
             ArcherSpeed = 80 * fElapsedTime;
         }
-        float GoopSpeed = 220 * fElapsedTime;
-        float SkeletonSpeed = 240 * fElapsedTime;
-        float PoisonGoopSpeed = 180 * fElapsedTime;
+        
+        //Enemy speeds
+        float GoopSpeed;
+        float SkeletonSpeed;
+        float PoisonGoopSpeed;
+        if (Wave < 25) {
+            GoopSpeed = 220 * fElapsedTime;
+            SkeletonSpeed = 240 * fElapsedTime;
+            PoisonGoopSpeed = 180 * fElapsedTime;
+        }
+        if (Wave >= 25) {
+            GoopSpeed = 250 * fElapsedTime;
+            SkeletonSpeed = 280 * fElapsedTime;
+            PoisonGoopSpeed = 240 * fElapsedTime;
+        }
         //Draw Poison Splash, so player is above
         DrawPoisonSplash();
         //Draw Archer
+        //Archer facing right
         if (ArcherDir == true) {
             DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
         }
+        //Archer facing left
         if (ArcherDir == false) {
             DrawDecal({ ArcherPos }, ArcherLeftDecal, { 2.0f, 2.0f });
         }
@@ -1136,59 +1265,7 @@ public:
             MoveEnemies(PoisonGoopSpeed, GoopSpeed, SkeletonSpeed, fElapsedTime);
             PlayerDeadCheck();
         }
-        if (Wave >= 1) {
-            DrawSkillUI(fElapsedTime);
-        }
-
-        //Draw webs
-        DrawSpiderwebs();
-    }
-    void DebugGameState(float fElapsedTime) {
-        Clear(olc::BLACK);
-        //Draw Grass
-        DrawGrass();
-        //Draw Leaves
-        DrawDecal({ 0.0f, 0.0f }, LeavesTestDecal, { 1.0f, 1.0f });
-        //Timers
-        for (int k = 0; k < SkelePos.size(); k++) {
-            if (SkeleShoot[k] == 1) {
-                SkeleShootTimer[k] += fElapsedTime;
-            }
-        }
-        for (int k = 0; k < PoisonGoopPos.size(); k++) {
-            if (PoisonBallShootBool[k] == 1) {
-                PoisonBallTimer[k] += fElapsedTime;
-            }
-        }
-        Time += fElapsedTime;
-        float ArcherSpeed = 200 * fElapsedTime;
-        float GoopSpeed = 220 * fElapsedTime;
-        float SkeletonSpeed = 240 * fElapsedTime;
-        float PoisonGoopSpeed = 180 * fElapsedTime;
-
-        //Draw Archer
-        if (ArcherDir == true) {
-            DrawDecal({ ArcherPos }, ArcherRightDecal, { 2.0f, 2.0f });
-        }
-        if (ArcherDir == false) {
-            DrawDecal({ ArcherPos }, ArcherLeftDecal, { 2.0f, 2.0f });
-        }
-        if (Time <= 5.0f && WaveDisplay == true) {
-            DisplayWave();
-        }
-        UserInput(ArcherSpeed, fElapsedTime);
-        ShootArrow(fElapsedTime);
-        WaveCheckDebug();
-        if (Time >= 5.0f && WaveDisplay == true) {
-            WaveDisplay = false;
-            Time = 0.0f;
-        }
-        if (Time >= 1.0f && WaveDisplay == false) {
-            //Spawn/Move Enemies
-            MoveEnemies(PoisonGoopSpeed, GoopSpeed, SkeletonSpeed, fElapsedTime);
-            //PlayerDeadCheck();
-        }
-        if (Wave >= 6) {
+        if (Wave >= 10) {
             DrawSkillUI(fElapsedTime);
         }
 
@@ -1207,10 +1284,6 @@ public:
         }
         if (GameState == GAME) {
             GameGameState(fElapsedTime);
-            return true;
-        }
-        if (GameState == DEBUG) {
-            DebugGameState(fElapsedTime);
             return true;
         }
         if (GameState == DEAD) {
@@ -1232,8 +1305,10 @@ private:
         WaveCounter.push_back(0);
         WaveCounter.push_back(0);
         WaveCounter.push_back(0);
+        WaveCounter.push_back(0);
         srand(time(NULL));
         //Sprites
+        Poop = std::make_unique<olc::Sprite>("./Sprites/Poop.png");
         LeavesTest = std::make_unique<olc::Sprite>("./Sprites/Leaves.png");
         PoisonSplatter = std::make_unique<olc::Sprite>("./Sprites/PoisonSplatter.png");
         PoisonGoopLeft = std::make_unique<olc::Sprite>("./Sprites/PoisonGoopLeft.png");
@@ -1263,6 +1338,7 @@ private:
         PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
         ArrowHitBoxPos = std::make_unique<olc::Sprite>("./Sprites/ArrowHitBoxPos.png");
         //Decals
+        PoopDecal = new olc::Decal(Poop.get());
         LeavesTestDecal = new olc::Decal(LeavesTest.get());
         PoisonSplatterDecal = new olc::Decal(PoisonSplatter.get());
         PoisonGoopLeftDecal = new olc::Decal(PoisonGoopLeft.get());
