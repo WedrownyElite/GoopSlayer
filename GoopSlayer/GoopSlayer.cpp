@@ -1373,8 +1373,29 @@ private:
 };
 
 int main() {
-    GoopSlayer demo;
-    if (demo.Construct(1024, 576, 1, 1, true))
-        demo.Start();
+    bool WindowedMode = false;
+    int ModeInt = 0;
+    while (true) {
+        std::cout << "1: Windowed Mode" << "\n";
+        std::cout << "2: Fullscreen Mode" << "\n";
+        std::cin >> ModeInt;
+
+        if (ModeInt == 1) {
+            GoopSlayer demo;
+            if (demo.Construct(1024, 576, 1, 1, false, true))
+                demo.Start();
+            break;
+        }
+        if (ModeInt == 2) {
+            GoopSlayer demo;
+            if (demo.Construct(1024, 576, 1, 1, true, true))
+                demo.Start();
+            break;
+        }
+        else {
+            system("CLS");
+            std::cout << "Unknown integer" << "\n" << "\n";
+        }
+    }
     return 0;
 }
