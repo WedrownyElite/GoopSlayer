@@ -37,7 +37,7 @@ public:
     std::unique_ptr<olc::Sprite> ArcherLeft;
     std::unique_ptr<olc::Sprite> ArcherRight;
     std::unique_ptr<olc::Sprite> PumpkinArrow;
-    std::unique_ptr<olc::Sprite> ArrowHitBoxPos;
+    std::unique_ptr<olc::Sprite> Arrow;
     //Decals
     olc::Decal* PoopDecal;
     olc::Decal* LeavesTestDecal;
@@ -255,18 +255,18 @@ public:
 
             float distance = dir.mag();
             //If Skeleton is outside 200 pixel range of user (add 5f to stop vibrating)
-            if (distance > 205.0f) {
+            if (distance > 300.0f) {
                 //Calc new position
                 SkelePos[k] += dir.norm() * SkeletonSpeed;
                 SkeleShoot[k] = 0;
             }
-            //If within 200 pixel range of user (remove 5f to stop vibrating)
-            else if (distance <= 195.0f && distance > 5.0f) {
-                //Calc new position
-                SkelePos[k] -= dir.norm() * SkeletonSpeed;
+            if (distance <= 300.0f) {
                 SkeleShoot[k] = 1;
             }
-            if (distance <= 220.0f) {
+            //If within 200 pixel range of user (remove 5f to stop vibrating)
+            else if (distance <= 295.0f && distance > 5.0f) {
+                //Calc new position
+                SkelePos[k] -= dir.norm() * SkeletonSpeed;
                 SkeleShoot[k] = 1;
             }
             // Draw the Skeleton
@@ -405,7 +405,8 @@ public:
                 //Angle of roation
                 float angle = atan2f(SkeleArrowVel[i].y, SkeleArrowVel[i].x);
                 //Draw ArrowHitBoxPos
-                DrawRotatedDecal(SkeleArrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f }, olc::WHITE);
+
+                DrawRotatedDecal(SkeleArrowPos[i], ArrowDecal, angle, { 1.0f, 1.0f }, { 1.0f, 1.0f });
             }
         }
     }
@@ -479,6 +480,7 @@ public:
     void SkeletonShoot(float fElapsedTime) {
         for (int k = 0; k < SkelePos.size(); k++) {
             if (SkeleShoot[k] == true && SkeleShootTimer[k] >= 1.5f) {
+
                 olc::vf2d UpdatedArcherPos = { ArcherPos.x + 8, ArcherPos.y + 8 };
                 // Calculate velocity towards the target
                 olc::vf2d vel = (UpdatedArcherPos - olc::vf2d(SkelePos[k])).norm() * 400.0f;
@@ -1265,7 +1267,7 @@ public:
         if (Time >= 1.0f && WaveDisplay == false) {
             //Spawn/Move Enemies
             MoveEnemies(PoisonGoopSpeed, GoopSpeed, SkeletonSpeed, fElapsedTime);
-            //PlayerDeadCheck();
+            PlayerDeadCheck();
         }
         if (Wave >= 10) {
             DrawSkillUI(fElapsedTime);
@@ -1338,7 +1340,7 @@ private:
         GoopRight = std::make_unique<olc::Sprite>("./Sprites/GoopRightPumpkin.png");
         GoopLeft = std::make_unique<olc::Sprite>("./Sprites/GoopLeftPumpkin.png");
         PumpkinArrow = std::make_unique<olc::Sprite>("./Sprites/Pumpkin.png");
-        ArrowHitBoxPos = std::make_unique<olc::Sprite>("./Sprites/ArrowHitBoxPos.png");
+        Arrow = std::make_unique<olc::Sprite>("./Sprites/Arrow.png");
         //Decals
         PoopDecal = new olc::Decal(Poop.get());
         LeavesTestDecal = new olc::Decal(LeavesTest.get());
@@ -1369,7 +1371,7 @@ private:
         ArcherLeftDecal = new olc::Decal(ArcherLeft.get());
         ArcherRightDecal = new olc::Decal(ArcherRight.get());
         PumpkinArrowDecal = new olc::Decal(PumpkinArrow.get());
-        ArrowDecal = new olc::Decal(ArrowHitBoxPos.get());
+        ArrowDecal = new olc::Decal(Arrow.get());
         return true;
     }
 };
@@ -1392,7 +1394,7 @@ int main() {
             if (demo.Construct(1024, 576, 1, 1, true, true))
                 demo.Start();
             break;
-        }
+        }                         
         else {
             system("CLS");
             std::cout << "Unknown integer" << "\n" << "\n";
