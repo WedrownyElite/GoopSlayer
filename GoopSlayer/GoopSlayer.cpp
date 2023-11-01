@@ -1375,30 +1375,21 @@ private:
         return true;
     }
 };
-
-int main() {
-    int ModeInt = 0;
-    while (true) {
-        std::cout << "1: Windowed Mode" << "\n";
-        std::cout << "2: Fullscreen Mode" << "\n";
-        std::cin >> ModeInt;
-
-        if (ModeInt == 1) {
-            GoopSlayer demo;
-            if (demo.Construct(1024, 576, 1, 1, false, true))
-                demo.Start();
-            break;
-        }
-        if (ModeInt == 2) {
-            GoopSlayer demo;
-            if (demo.Construct(1024, 576, 1, 1, true, true))
-                demo.Start();
-            break;
-        }                         
-        else {
-            system("CLS");
-            std::cout << "Unknown integer" << "\n" << "\n";
-        }
+class WindowFullOption : public olc::PixelGameEngine {
+public:
+    bool OnUserUpdate(float fElapsedTime) override {
+        DrawStringDecal({ 50, 50 }, "Windowed", 5.0f);
+        DrawStringDecal({ 150, 150 }, "Fullscreen", 5.0f);
+        return true;
     }
+private:
+    bool OnUserCreate() override {
+        return true;
+    }
+};
+int main() {
+    WindowFullOption demo;
+    if (demo.Construct(500, 500, 1, 1))
+        demo.Start();
     return 0;
 }
