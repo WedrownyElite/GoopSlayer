@@ -1391,5 +1391,8 @@ int main() {
     WindowFullOption demo;
     if (demo.Construct(500, 500, 1, 1))
         demo.Start();
+    //GoopSlayer demo;
+    //if (demo.Construct(1024, 576, 1, 1, true, true))
+        //demo.Start();
     return 0;
 }
