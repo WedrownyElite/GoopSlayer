@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Emscripten Build Files
+GoopSlayer.html
+GoopSlayer.js
+GoopSlayer.wasm
+GoopSlayer.data
